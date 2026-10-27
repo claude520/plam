@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronRight, Zap, Ticket, Tv, Gift, Flame, Store, Grid3X3, RefreshCw, Sparkles, Heart, ShoppingBag, Clock } from 'lucide-react'
 import { useDB } from '@/store/db'
@@ -29,11 +29,22 @@ export default function Home() {
   const feedTabs = ['猜你喜欢', '运动户外', '馋嘴零食', '潮电数码', '服饰时尚', '家装建材', '办公文具', '健康保健']
   const feedMap: Record<string, string> = { 运动户外: 'c6', 馋嘴零食: 'c8', 潮电数码: 'c2', 服饰时尚: 'c5', 家装建材: 'c4', 办公文具: 'c1', 健康保健: 'c10' }
   const [seedShift, setSeedShift] = useState(0)
+  const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches
+  const [visible, setVisible] = useState(isMobile ? 8 : 30)
+  const sentinel = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const el = sentinel.current
+    if (!el || !('IntersectionObserver' in window)) return
+    const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) setVisible(v => v + 10) }, { rootMargin: '600px' })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+  useEffect(() => { setVisible(isMobile ? 8 : 30) }, [feedTab, seedShift, isMobile])
   const feed = useMemo(() => {
     const base = feedTab === '猜你喜欢' ? onSale : onSale.filter(p => p.categoryId.startsWith(feedMap[feedTab] + '-'))
     const arr = [...base]
     for (let i = arr.length - 1; i > 0; i--) { const j = (i * 7 + seedShift * 13) % (i + 1); [arr[i], arr[j]] = [arr[j], arr[i]] }
-    return arr.slice(0, 30)
+    return arr.slice(0, 60)
   }, [onSale, feedTab, seedShift])
   const pick = (ids: number[]) => ids.map(i => onSale[i % onSale.length]).filter(Boolean)
   const pendingCount = orders.filter(o => o.userId === user?.id && o.status === 'unpaid').length
@@ -215,8 +226,9 @@ export default function Home() {
           </div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-3 pb-6">
-          {feed.map((p, i) => <ProductCard key={p.id} p={p} eager={i < 5} />)}
+          {feed.slice(0, visible).map((p, i) => <ProductCard key={p.id} p={p} eager={!isMobile && i < 5} />)}
         </div>
+        <div ref={sentinel} className="h-px" />
         <div className="text-center text-ink-400 text-sm pb-4">— 已经到底啦，去搜索看看更多宝贝 —</div>
       </div>
     </div>

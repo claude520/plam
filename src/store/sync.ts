@@ -38,8 +38,10 @@ export const sync = {
   attach(s: Store) {
     store = s
     if (typeof window === 'undefined') return
-    pull()
-    timer = window.setInterval(poll, 8000)
+    const start = () => { pull(); timer = window.setInterval(poll, 8000) }
+    const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => void }
+    if (w.requestIdleCallback) w.requestIdleCallback(start, { timeout: 3000 })
+    else setTimeout(start, 1500)
     window.addEventListener('focus', poll)
   },
   mutate(name: string, args: unknown[]) {
