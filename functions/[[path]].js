@@ -16,7 +16,22 @@ function offline() {
   });
 }
 
+// 门卫：在 Cloudflare 这边就挡掉爬虫、脚本工具和黑客扫描，请求到不了分身电脑
+const BAD_UA = /(curl|wget|python-requests|python-urllib|python\/|aiohttp|httpx|scrapy|go-http-client|java\/|okhttp|libwww|httpclient|node-fetch|axios|undici|headlesschrome|phantomjs|selenium|puppeteer|playwright|crawler|spider|scrapy|bot\b|bot\/|masscan|nmap|nikto|sqlmap|zgrab)/i;
+const BAD_PATH = /^\/(\.env|\.git|\.svn|\.ds_store|wp-|wordpress|phpmyadmin|pma|xmlrpc|cgi-bin|vendor\/|actuator|server-status|config\.json|backup|.*\.(php|asp|aspx|jsp|bak|sql)$)/i;
+
+function forbidden() {
+  return new Response("Forbidden", { status: 403, headers: { "Content-Type": "text/plain", "Cache-Control": "no-store" } });
+}
+
 export async function onRequest({ request, env }) {
+  const ua = request.headers.get("User-Agent") || "";
+  const path = new URL(request.url).pathname;
+  if (path === "/robots.txt") {
+    return new Response("User-agent: *\nDisallow: /\n", { headers: { "Content-Type": "text/plain; charset=utf-8" } });
+  }
+  if (!ua || BAD_UA.test(ua) || BAD_PATH.test(path)) return forbidden();
+
   const [target, secret] = await Promise.all([
     env.FENSHEN.get("target", { cacheTtl: 60 }),
     env.FENSHEN.get("secret", { cacheTtl: 300 }),
