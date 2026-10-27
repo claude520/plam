@@ -51,7 +51,7 @@ export default function Cart() {
                     <input type="checkbox" aria-label="选择店铺" className="accent-brand-500 w-4 h-4" checked={shopChecked(sid)} onChange={e => items.forEach(r => updateCart(r.c.id, { checked: e.target.checked }))} />
                     <span className={cls('tag text-white', shop.type === 'tmall' ? 'bg-brand-500' : 'bg-brand-400')}>{shop.type === 'tmall' ? '天猫' : 'Plam'}</span>
                     <Link to={`/shop/${shop.id}`} className="font-semibold hover:text-brand-500">{shop.name}</Link>
-                    <span className="text-qn-500 text-xs">💬</span>
+                    <span className="text-qn-600 text-xs">💬</span>
                     {coupons.find(x => x.shopId === sid && x.status === 'active') && <span className="ml-2 text-xs text-brand-500 border border-brand-200 rounded px-1.5 py-0.5">店铺优惠：{coupons.filter(x => x.shopId === sid && x.status === 'active').map(c => c.type === 'full' ? `满${c.threshold}减${c.value}` : `${c.value * 10}折`).join(' · ')}</span>}
                   </div>
                   <div className="divide-y divide-ink-100">

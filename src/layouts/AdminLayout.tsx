@@ -30,11 +30,11 @@ export default function AdminLayout() {
   return (
     <div className="min-h-screen bg-[#f3f4f7] flex">
       <aside className={cls('bg-[#0f172a] text-slate-300 flex flex-col sticky top-0 h-screen transition-all', collapsed ? 'w-16' : 'w-[232px]')}>
-        <Link to="/admin" className="h-16 flex items-center gap-2.5 px-4 border-b border-white/5"><span className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-black text-lg shrink-0">P</span>{!collapsed && <div><div className="text-white font-semibold leading-tight">Plam 超级管理后台</div><div className="text-[10px] text-slate-500">Super Admin Console</div></div>}</Link>
+        <Link to="/admin" className="h-16 flex items-center gap-2.5 px-4 border-b border-white/5"><span className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-black text-lg shrink-0">P</span>{!collapsed && <div><div className="text-white font-semibold leading-tight">Plam 超级管理后台</div><div className="text-[10px] text-slate-400">Super Admin Console</div></div>}</Link>
         <nav className="flex-1 overflow-auto py-3 no-scrollbar">
           {ADMIN_MENU.map(g => (
             <div key={g.title} className="mb-2">
-              {!collapsed && <div className="px-5 py-1.5 text-[11px] text-slate-500 uppercase tracking-wider">{g.title}</div>}
+              {!collapsed && <div className="px-5 py-1.5 text-[11px] text-slate-400 uppercase tracking-wider">{g.title}</div>}
               {g.items.map(it => <NavLink key={it.to} to={it.to} end={it.to === '/admin'} title={it.label} className={({ isActive }) => cls('mx-2.5 my-0.5 flex items-center gap-3 px-3 h-10 rounded-lg text-sm transition', isActive ? 'bg-brand-500 text-white shadow' : 'hover:bg-white/5 hover:text-white', collapsed && 'justify-center px-0')}>{it.icon}{!collapsed && it.label}</NavLink>)}
             </div>
           ))}

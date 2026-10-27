@@ -52,7 +52,7 @@ export function Confirm({ open, onClose, onOk, title = '确认操作', desc, dan
   return (
     <Modal open={open} onClose={onClose} width={420} footer={<><button className="btn-outline" onClick={onClose}>取消</button><button className={cls('btn', danger ? 'bg-red-500 hover:bg-red-600 text-white' : 'btn-primary')} onClick={() => { onOk(); onClose() }}>确定</button></>}>
       <div className="flex gap-3">
-        <AlertCircle className={cls('w-6 h-6 shrink-0', danger ? 'text-red-500' : 'text-amber-500')} />
+        <AlertCircle className={cls('w-6 h-6 shrink-0', danger ? 'text-red-600' : 'text-amber-500')} />
         <div><div className="font-semibold">{title}</div>{desc && <div className="text-ink-500 mt-1 text-sm">{desc}</div>}</div>
       </div>
     </Modal>
@@ -151,7 +151,7 @@ export function Stat({ label, value, sub, accent, onClick, big }: { label: React
 export function Field({ label, children, required, hint, inline }: { label: ReactNode; children: ReactNode; required?: boolean; hint?: string; inline?: boolean }) {
   return (
     <label className={cls('block', inline && 'flex items-center gap-4')}>
-      <div className={cls('text-sm text-ink-600 mb-1.5', inline && 'w-24 text-right shrink-0 mb-0')}>{required && <span className="text-red-500 mr-0.5">*</span>}{label}</div>
+      <div className={cls('text-sm text-ink-600 mb-1.5', inline && 'w-24 text-right shrink-0 mb-0')}>{required && <span className="text-red-600 mr-0.5">*</span>}{label}</div>
       <div className="flex-1">{children}{hint && <div className="text-xs text-ink-400 mt-1">{hint}</div>}</div>
     </label>
   )

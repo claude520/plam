@@ -59,10 +59,10 @@ export default function Orders() {
             <div key={o.id} className="card overflow-hidden">
               <div className="flex items-center gap-3 px-4 h-11 bg-ink-50 text-sm">
                 <span className="text-ink-700">{fmtDate(o.createdAt, false)}</span><span className="text-ink-500">订单号: <span className="font-num text-ink-800">{o.id}</span></span>
-                <span className={cls('tag text-white', shop.type === 'tmall' ? 'bg-brand-500' : 'bg-brand-400')}>{shop.type === 'tmall' ? '天猫' : 'Plam'}</span><Link to={`/shop/${shop.id}`} className="font-medium hover:text-brand-500">{shop.name}</Link><span className="text-qn-500 text-xs">💬</span>
+                <span className={cls('tag text-white', shop.type === 'tmall' ? 'bg-brand-500' : 'bg-brand-400')}>{shop.type === 'tmall' ? '天猫' : 'Plam'}</span><Link to={`/shop/${shop.id}`} className="font-medium hover:text-brand-500">{shop.name}</Link><span className="text-qn-600 text-xs">💬</span>
                 <Link to={`/my/orders/${o.id}`} className="text-brand-500 hover:underline">订单详情 ›</Link>
                 <span className={cls('ml-auto font-medium', st.color)}>{st.label}</span>
-                <span className="text-ink-300">⚑</span><button aria-label="删除订单" onClick={() => toast('订单已移入回收站')} className="text-ink-400 hover:text-brand-500"><Trash2 className="w-4 h-4" /></button>
+                <span className="text-ink-400">⚑</span><button aria-label="删除订单" onClick={() => toast('订单已移入回收站')} className="text-ink-400 hover:text-brand-500"><Trash2 className="w-4 h-4" /></button>
               </div>
               <div className="grid grid-cols-[1fr_120px_140px_140px] px-4 py-4 text-sm">
                 <div className="divide-y divide-ink-100">
@@ -82,7 +82,7 @@ export default function Orders() {
                   {o.status === 'received' && <><button onClick={() => setReviewOf(o)} className="btn-primary btn-sm w-24">评价</button><button onClick={() => nav(`/checkout?pid=${o.items[0].productId}&sku=${products.find(p => p.id === o.items[0].productId)?.skus[0].id}&qty=1`)} className="text-xs text-ink-700 hover:text-brand-500">再买一单</button></>}
                   {(o.status === 'done' || o.status === 'closed') && <><button onClick={() => nav(`/checkout?pid=${o.items[0].productId}&sku=${products.find(p => p.id === o.items[0].productId)?.skus[0].id}&qty=1`)} className="btn-primary btn-sm w-24">再买一单</button>{o.logistics && <Link to={`/my/orders/${o.id}`} className="text-xs text-ink-700 hover:text-brand-500">查看物流</Link>}</>}
                   {o.status === 'paid' && <><span className="text-xs text-ink-500">等待卖家发货</span><button onClick={() => setRefundOf(o)} className="text-xs text-ink-700 hover:text-brand-500">申请退款</button></>}
-                  {o.status === 'refunding' && <Link to="/my/refunds" className="text-xs text-amber-600">退款处理中 ›</Link>}
+                  {o.status === 'refunding' && <Link to="/my/refunds" className="text-xs text-amber-700">退款处理中 ›</Link>}
                 </div>
               </div>
             </div>
@@ -121,7 +121,7 @@ export function ReviewModal({ order, onClose, onOk }: { order: Order | null; onC
     <Modal open={!!order} onClose={onClose} title="评价宝贝" footer={<><button className="btn-outline" onClick={onClose}>取消</button><button className="btn-primary" disabled={!content} onClick={() => onOk(rating, content)}>发布评价</button></>}>
       {order && <div className="space-y-4">
         {order.items.map((it, i) => <div key={i} className="flex gap-3 bg-ink-50 rounded-lg p-3"><Img src={it.image} alt="" w={56} h={56} className="w-14 h-14 rounded" /><div className="text-sm line-clamp-2">{it.title}</div></div>)}
-        <Field label="综合评分"><div className="flex gap-1">{[1, 2, 3, 4, 5].map(n => <button key={n} aria-label={`${n}星`} onClick={() => setRating(n)}><Star className={cls('w-7 h-7', n <= rating ? 'fill-brand-500 text-brand-500' : 'text-ink-300')} /></button>)}<span className="ml-2 text-sm text-ink-500 self-center">{['', '很差', '较差', '一般', '满意', '非常满意'][rating]}</span></div></Field>
+        <Field label="综合评分"><div className="flex gap-1">{[1, 2, 3, 4, 5].map(n => <button key={n} aria-label={`${n}星`} onClick={() => setRating(n)}><Star className={cls('w-7 h-7', n <= rating ? 'fill-brand-500 text-brand-500' : 'text-ink-400')} /></button>)}<span className="ml-2 text-sm text-ink-500 self-center">{['', '很差', '较差', '一般', '满意', '非常满意'][rating]}</span></div></Field>
         <Field label="评价内容"><textarea className="input h-28 py-2" value={content} onChange={e => setContent(e.target.value)} placeholder="宝贝满足你的期待吗？说说它的优点和美中不足的地方吧" /></Field>
       </div>}
     </Modal>

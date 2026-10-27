@@ -4,12 +4,38 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Plam 商城：买家中心、商家工作台与超级管理后台一体化电商平台" />
-    <meta name="theme-color" content="#ff5000" />
+    <meta name="description" content="Plam 商城：买家中心、商家工作台与超级管理后台一体化电商平台，淘你喜欢。" />
+    <meta name="theme-color" content="#c84200" />
+    <link rel="preconnect" href="https://picsum.photos" crossorigin />
+    <link rel="dns-prefetch" href="https://api.dicebear.com" />
     <title>Plam 商城 - 淘你喜欢</title>
+    <style>
+      /* 首屏静态骨架：JS 加载前先渲染，提升 FCP/LCP；React 挂载后替换 */
+      html,body{margin:0;background:#f5f5f7;font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;color:#1d2939}
+      .sk-top{background:#f0f2f5;border-bottom:1px solid #e4e7ec;height:32px}
+      .sk-bar{background:linear-gradient(90deg,#ff3b1f,#ff5a2e,#ff7a3d);height:56px;display:flex;align-items:center;color:#fff}
+      .sk-wrap{max-width:1300px;margin:0 auto;padding:0 16px;width:100%;box-sizing:border-box}
+      .sk-bar b{font-size:24px;font-style:italic;letter-spacing:2px;margin-right:16px}
+      .sk-bar span{font-size:18px;font-weight:600}
+      .sk-head{background:#fff;height:112px;display:flex;align-items:center;gap:40px}
+      .sk-logo{display:flex;align-items:center;gap:8px;font-weight:900;font-size:26px;color:#c84200}
+      .sk-logo i{width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,#ff8a4c,#c84200);display:inline-block}
+      .sk-search{flex:1;max-width:640px;height:44px;border:2px solid #c84200;border-radius:999px;background:#fff}
+      .sk-grid{display:grid;grid-template-columns:190px 1fr 300px;gap:12px;margin-top:12px}
+      .sk-box{background:#fff;border-radius:14px;height:420px}
+      .sk-hero{border-radius:14px;height:250px;background:linear-gradient(135deg,#ff6a3d,#ff2e63);color:#fff;padding:28px;box-sizing:border-box}
+      .sk-hero h1{margin:8px 0;font-size:36px;font-weight:900}
+      .sk-hero p{margin:0;font-size:18px;font-weight:500;opacity:.95}
+      @media (max-width:1024px){.sk-grid{grid-template-columns:1fr}.sk-box{display:none}}
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="sk-top"></div>
+      <div class="sk-bar"><div class="sk-wrap"><b>双11开门红</b><span>叠券低至7.2折起</span></div></div>
+      <div class="sk-head"><div class="sk-wrap" style="display:flex;align-items:center;gap:40px"><div class="sk-logo"><i></i>Plam</div><div class="sk-search"></div></div></div>
+      <div class="sk-wrap"><div class="sk-grid"><div class="sk-box"></div><div><div class="sk-hero"><div style="font-size:12px;letter-spacing:4px;opacity:.8">双11 · 开门红</div><h1>服饰时尚</h1><p>叠券低至7.2折起 · 大牌时髦秋冬焕新</p></div></div><div class="sk-box"></div></div></div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

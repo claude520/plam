@@ -46,7 +46,7 @@ export default function Home() {
     <div className="card p-3 flex flex-col">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5"><span className={cls('tag text-white', color)}>{tag}</span><span className="font-semibold text-[15px]">{title}</span></div>
-        <Link to={to} className="text-ink-400 hover:text-brand-500"><ChevronRight className="w-4 h-4" /></Link>
+        <Link to={to} aria-label="查看更多" className="text-ink-400 hover:text-brand-500"><ChevronRight className="w-4 h-4" /></Link>
       </div>
       <div className="grid grid-cols-2 gap-2 flex-1">
         {items.slice(0, 2).map(p => (
@@ -88,7 +88,7 @@ export default function Home() {
           <Channel icon={<Store className="w-3.5 h-3.5" />} label="企业采购" to="/search?q=采购" color="bg-qn-500" />
           <Channel icon={<Zap className="w-3.5 h-3.5" />} label="司法拍卖" to="/search?q=拍卖" color="bg-rose-500" />
           <Channel icon={<ShoppingBag className="w-3.5 h-3.5" />} label="Plam 超市" to="/search?q=超市" color="bg-red-500" />
-          <Channel icon={<Gift className="w-3.5 h-3.5" />} label="国家补贴" to="/search?q=国补" color="bg-emerald-500" />
+          <Channel icon={<Gift className="w-3.5 h-3.5" />} label="国家补贴" to="/search?q=国补" color="bg-emerald-700" />
           <Channel icon={<Ticket className="w-3.5 h-3.5" />} label="领券中心" to="/my/coupons" color="bg-amber-500" />
           <Channel icon={<Flame className="w-3.5 h-3.5" />} label="双11开门红" to="/search?q=双11" color="bg-brand-500" />
           <Channel icon={<Grid3X3 className="w-3.5 h-3.5" />} label="全部频道" to="/search" color="bg-ink-500" />
@@ -105,7 +105,7 @@ export default function Home() {
               const subs = categories.filter(x => x.parentId === c.id)
               return (
                 <div key={c.id} onMouseEnter={() => setHoverCat(c.id)} className={cls('px-4 py-[7px] text-[13px] flex items-center gap-1 cursor-pointer', hoverCat === c.id ? 'bg-brand-50 text-brand-500' : 'text-ink-700')}>
-                  {subs.slice(0, 2).map((s, i) => <span key={s.id}>{i > 0 && <span className="text-ink-300 mx-1">/</span>}<Link to={`/search?cat=${s.id}`} className="hover:text-brand-500">{s.name}</Link></span>)}
+                  {subs.slice(0, 2).map((s, i) => <span key={s.id}>{i > 0 && <span className="text-ink-400 mx-1">/</span>}<Link to={`/search?cat=${s.id}`} className="hover:text-brand-500">{s.name}</Link></span>)}
                 </div>
               )
             })}
@@ -155,9 +155,9 @@ export default function Home() {
             </div>
             <div className="grid grid-cols-4 gap-3">
               <Promo title="领券中心" tag="双11" items={pick([8, 12])} to="/my/coupons" color="bg-brand-500" />
-              <Promo title="Plam 直播" tag="双11" items={pick([14, 20])} to="/search?q=直播" color="bg-rose-500" />
-              <Promo title="国家补贴" tag="双11" items={pick([0, 1])} to="/search?q=国补" color="bg-emerald-500" />
-              <Promo title="限时秒杀" tag="20:00" items={pick([30, 31])} to="/search?q=秒杀" color="bg-amber-500" />
+              <Promo title="Plam 直播" tag="双11" items={pick([14, 20])} to="/search?q=直播" color="bg-rose-600" />
+              <Promo title="国家补贴" tag="双11" items={pick([0, 1])} to="/search?q=国补" color="bg-emerald-700" />
+              <Promo title="限时秒杀" tag="20:00" items={pick([30, 31])} to="/search?q=秒杀" color="bg-amber-700" />
             </div>
           </div>
 
@@ -200,7 +200,7 @@ export default function Home() {
         <div className="card mt-4 p-4 flex items-center gap-6 overflow-x-auto no-scrollbar">
           <div className="shrink-0 font-semibold text-ink-900 flex items-center gap-1"><Store className="w-4 h-4 text-brand-500" />品牌旗舰</div>
           {shops.filter(s => s.status === 'open').map(s => (
-            <Link key={s.id} to={`/shop/${s.id}`} className="shrink-0 flex items-center gap-2 text-sm text-ink-700 hover:text-brand-500"><Avatar src={s.logo} name={s.name} size={28} />{s.name}</Link>
+            <Link key={s.id} to={`/shop/${s.id}`} className="shrink-0 flex items-center gap-2 text-sm text-ink-700 hover:text-brand-500"><Avatar src={s.logo} name="" size={28} />{s.name}</Link>
           ))}
         </div>
 
