@@ -1,0 +1,9 @@
+# Cloudflare Pages 配置：plam.pages.dev 是分身的固定入口
+name = "plam"
+compatibility_date = "2026-10-01"
+pages_build_output_dir = "public"
+
+# 分身电脑当前的隧道地址（target）和转发口令（secret）存在这里，分身每次启动时更新
+[[kv_namespaces]]
+binding = "FENSHEN"
+id = "961fd0df80834734bb05c41d7c018479"
