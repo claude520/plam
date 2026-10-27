@@ -36,8 +36,8 @@ export async function onRequest({ request, env }) {
       body: request.method === "GET" || request.method === "HEAD" ? undefined : request.body,
       redirect: "manual",
     });
-    // 隧道已经失效（Cloudflare 收回了临时网址）时也显示离线页
-    if (resp.status === 530 || resp.status === 1033) return offline();
+    // 隧道断了或已失效（电脑关机、网络中断、临时网址被收回）时显示离线页，不露出 Cloudflare 的英文错误页
+    if ([502, 503, 504].includes(resp.status) || (resp.status >= 520 && resp.status <= 530)) return offline();
     return new Response(resp.body, resp);  // 原样流式转发，回答一个字一个字地出来
   } catch (e) {
     return offline();
