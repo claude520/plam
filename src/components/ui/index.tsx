@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { ChevronLeft, ChevronRight, X, Check, AlertCircle, Info, Search, Inbox } from 'lucide-react'
 import { cls } from '@/lib/format'
 import { useUI } from '@/store/session'
+import IMG_MAP from '@/data/imgmap.json'
 
 // ---------- Toast ----------
 export function Toaster() {
@@ -196,7 +197,8 @@ export function Rating({ value, size = 12 }: { value: number; size?: number }) {
 
 export const thumb = (src: string, size = 400) => src.replace(/\/800\/800$/, `/${size}/${size}`)
 export function Img({ src, alt, className, w = 400, h = 400, eager }: { src: string; alt: string; className?: string; w?: number; h?: number; eager?: boolean }) {
-  return <img src={w <= 400 && h <= 400 ? thumb(src) : src} alt={alt} width={w} height={h} loading={eager ? 'eager' : 'lazy'} fetchPriority={eager ? 'high' : 'auto'} decoding={eager ? 'sync' : 'async'} className={cls('bg-ink-100 object-cover', className)} />
+  const url = w <= 400 && h <= 400 ? thumb(src) : src
+  return <img src={(IMG_MAP as Record<string, string>)[url] ?? url} alt={alt} width={w} height={h} loading={eager ? 'eager' : 'lazy'} fetchPriority={eager ? 'high' : 'auto'} decoding={eager ? 'sync' : 'async'} className={cls('bg-ink-100 object-cover', className)} />
 }
 
 export function PageHeader({ title, desc, extra }: { title: ReactNode; desc?: ReactNode; extra?: ReactNode }) {
