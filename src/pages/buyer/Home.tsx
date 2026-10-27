@@ -138,7 +138,7 @@ export default function Home() {
                   </Link>
                 ))}
                 <div className="absolute left-7 bottom-5 flex gap-1.5 z-10">
-                  {heroBanners.map((b, i) => <button key={b.id} aria-label={`第${i + 1}张`} onClick={() => setSlide(i)} className={cls('h-1.5 rounded-full transition-all', i === slide ? 'w-5 bg-white' : 'w-1.5 bg-white/50')} />)}
+                  {heroBanners.map((b, i) => <button key={b.id} aria-label={`第${i + 1}张`} onClick={() => setSlide(i)} className="h-6 min-w-[24px] flex items-center justify-center"><span className={cls('h-1.5 rounded-full transition-all', i === slide ? 'w-5 bg-white' : 'w-1.5 bg-white/50')} /></button>)}
                 </div>
               </div>
               <div className="rounded-xl2 overflow-hidden h-[250px] shadow-card bg-gradient-to-br from-[#ff4d4d] to-[#ff1f6b] p-4 text-white relative">

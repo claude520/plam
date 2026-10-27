@@ -46,7 +46,7 @@ export function TopBar() {
           <Link to="/" className="hover:text-brand-500">Plam 首页</Link>
           <Link to="/my/orders" className="hover:text-brand-500">已买到的宝贝</Link>
           <Link to="/my" className="hover:text-brand-500 flex items-center gap-0.5">我的 Plam<ChevronDown className="w-3 h-3" /></Link>
-          <Link to="/cart" className="hover:text-brand-500 flex items-center gap-1 text-brand-500 font-medium"><ShoppingCart className="w-3.5 h-3.5" />购物车 {cartCount}</Link>
+          <Link to="/cart" className="hover:text-brand-500 flex items-center gap-1 text-brand-600 font-medium"><ShoppingCart className="w-3.5 h-3.5" />购物车 {cartCount}</Link>
           <Link to="/my/favorites" className="hover:text-brand-500 flex items-center gap-0.5"><Heart className="w-3.5 h-3.5" />收藏夹<ChevronDown className="w-3 h-3" /></Link>
           <Link to="/seller" className="hover:text-brand-500">免费开店<ChevronDown className="w-3 h-3 inline" /></Link>
           <Link to="/seller" className="hover:text-brand-500">商家中心<ChevronDown className="w-3 h-3 inline" /></Link>
