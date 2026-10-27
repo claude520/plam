@@ -21,7 +21,7 @@ export default function Home() {
   const { products, categories, banners, shops, cart, footprints, favorites, orders, campaigns } = useDB()
   const heroBanners = banners.filter(b => b.position === 'home-hero' && b.status === 'on').sort((a, b) => a.sort - b.sort)
   const [slide, setSlide] = useState(0)
-  useEffect(() => { const i = setInterval(() => setSlide(s => (s + 1) % Math.max(1, heroBanners.length)), 4000); return () => clearInterval(i) }, [heroBanners.length])
+  useEffect(() => { let i: number | undefined; const t = window.setTimeout(() => { i = window.setInterval(() => setSlide(s => (s + 1) % Math.max(1, heroBanners.length)), 5000) }, 12000); return () => { clearTimeout(t); if (i) clearInterval(i) } }, [heroBanners.length])
   const topCats = categories.filter(c => !c.parentId).sort((a, b) => a.sort - b.sort)
   const [hoverCat, setHoverCat] = useState<string | null>(null)
   const onSale = useMemo(() => products.filter(p => p.status === 'on'), [products])
