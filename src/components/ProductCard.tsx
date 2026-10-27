@@ -4,12 +4,12 @@ import { Img } from '@/components/ui'
 import { compact, money } from '@/lib/format'
 import { useDB } from '@/store/db'
 
-export function ProductCard({ p, size = 'md' }: { p: Product; size?: 'sm' | 'md' }) {
+export function ProductCard({ p, size = 'md', eager }: { p: Product; size?: 'sm' | 'md'; eager?: boolean }) {
   const shop = useDB(s => s.shops.find(x => x.id === p.shopId))
   return (
     <Link to={`/item/${p.id}`} className="group card overflow-hidden hover:shadow-float transition-shadow block">
       <div className="relative aspect-square overflow-hidden">
-        <Img src={p.images[0]} alt={p.title} className="w-full h-full group-hover:scale-105 transition-transform duration-500" />
+        <Img src={p.images[0]} alt={p.title} eager={eager} className="w-full h-full group-hover:scale-105 transition-transform duration-500" />
         {p.tags[0] && <span className="absolute left-2 top-2 tag bg-brand-500 text-white shadow">{p.tags[0]}</span>}
       </div>
       <div className={size === 'sm' ? 'p-2.5' : 'p-3'}>
@@ -34,7 +34,7 @@ export function ProductCard({ p, size = 'md' }: { p: Product; size?: 'sm' | 'md'
 export function ProductGrid({ items, cols = 5 }: { items: Product[]; cols?: number }) {
   return (
     <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
-      {items.map(p => <ProductCard key={p.id} p={p} />)}
+      {items.map((p, i) => <ProductCard key={p.id} p={p} eager={i < cols} />)}
     </div>
   )
 }

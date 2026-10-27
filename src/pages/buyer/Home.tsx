@@ -51,7 +51,7 @@ export default function Home() {
       <div className="grid grid-cols-2 gap-2 flex-1">
         {items.slice(0, 2).map(p => (
           <Link key={p.id} to={`/item/${p.id}`} className="group">
-            <div className="aspect-square rounded-lg overflow-hidden"><Img src={p.images[0]} alt={p.title} w={200} h={200} className="w-full h-full group-hover:scale-105 transition-transform" /></div>
+            <div className="aspect-square rounded-lg overflow-hidden"><Img src={p.images[0]} alt={p.title} w={200} h={200} eager className="w-full h-full group-hover:scale-105 transition-transform" /></div>
             <div className="mt-1.5"><span className="inline-block bg-brand-500 text-white text-xs font-num font-semibold rounded px-1.5 py-0.5">¥{money(p.price, 0)}</span></div>
           </Link>
         ))}
@@ -146,7 +146,7 @@ export default function Home() {
                 <div className="grid grid-cols-2 gap-3">
                   {pick([3, 4]).map(p => (
                     <Link key={p.id} to={`/item/${p.id}`} className="bg-white rounded-xl p-2 text-ink-900 group">
-                      <div className="aspect-square rounded-lg overflow-hidden"><Img src={p.images[0]} alt={p.title} w={200} h={200} className="w-full h-full group-hover:scale-105 transition-transform" /></div>
+                      <div className="aspect-square rounded-lg overflow-hidden"><Img src={p.images[0]} alt={p.title} w={200} h={200} eager className="w-full h-full group-hover:scale-105 transition-transform" /></div>
                       <div className="mt-1.5 flex items-center justify-between"><span className="bg-brand-500 text-white text-xs font-num font-semibold rounded px-1.5 py-0.5">¥{money(p.price, 0)}</span><span className="text-[10px] text-ink-400">补贴价</span></div>
                     </Link>
                   ))}
@@ -214,7 +214,7 @@ export default function Home() {
           </div>
         </div>
         <div className="grid grid-cols-5 gap-3 pb-6">
-          {feed.map(p => <ProductCard key={p.id} p={p} />)}
+          {feed.map((p, i) => <ProductCard key={p.id} p={p} eager={i < 5} />)}
         </div>
         <div className="text-center text-ink-400 text-sm pb-4">— 已经到底啦，去搜索看看更多宝贝 —</div>
       </div>
