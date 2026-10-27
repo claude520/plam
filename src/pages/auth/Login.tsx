@@ -38,15 +38,15 @@ export default function Login({ register }: { register?: boolean }) {
   return (
     <div className="min-h-screen bg-[#f2f3f5] flex flex-col">
       <div className="container-x py-5"><Logo /></div>
-      <div className="flex-1 flex items-center justify-center pb-20">
-        <div className="bg-white rounded-2xl shadow-float w-[860px] grid grid-cols-2 overflow-hidden">
-          <div className="p-10 flex flex-col items-center justify-center border-r border-ink-100 bg-gradient-to-b from-white to-ink-50">
+      <div className="flex-1 flex items-center justify-center pb-10 md:pb-20 px-4">
+        <div className="bg-white rounded-2xl shadow-float w-full max-w-[860px] grid grid-cols-1 md:grid-cols-2 overflow-hidden">
+          <div className="p-10 hidden md:flex flex-col items-center justify-center border-r border-ink-100 bg-gradient-to-b from-white to-ink-50">
             <div className="font-semibold text-lg mb-4">手机扫码登录</div>
             <div className="w-44 h-44 bg-white border border-ink-200 rounded-xl flex items-center justify-center relative"><QrCode className="w-36 h-36 text-ink-800" /><span className="absolute w-9 h-9 rounded-lg bg-brand-500 text-white flex items-center justify-center font-black">P</span></div>
             <div className="text-xs text-ink-500 mt-4">打开 Plam APP，点击左上角扫一扫</div>
             <div className="text-xs text-ink-400 mt-10">怎么扫码登录？</div>
           </div>
-          <div className="p-10">
+          <div className="p-6 md:p-10">
             <div className="flex items-center gap-6 mb-6">
               {([['pwd', '密码登录'], ['sms', '短信登录']] as const).map(([k, l]) => <button key={k} onClick={() => setTab(k)} className={cls('text-lg font-semibold relative pb-1', tab === k ? 'text-brand-500' : 'text-ink-700')}>{l}{tab === k && <span className="absolute left-0 right-0 bottom-0 h-0.5 bg-brand-500" />}</button>)}
               <span className="ml-auto text-xs text-ink-400">企业账号登录 ›</span>
@@ -60,7 +60,7 @@ export default function Login({ register }: { register?: boolean }) {
             </form>
             <div className="mt-6 pt-5 border-t border-ink-100">
               <div className="text-xs text-ink-400 mb-2 flex items-center gap-1"><ShieldCheck className="w-3.5 h-3.5" />演示账号一键登录</div>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <button onClick={() => quick('u-buyer-1', 'buyer')} className="btn-outline btn-sm"><User className="w-3.5 h-3.5" />买家 xiyan</button>
                 <button onClick={() => quick('u-seller-12', 'seller')} className="btn-outline btn-sm"><Store className="w-3.5 h-3.5" />商家 seller12</button>
                 <button onClick={() => quick('u-admin-1', 'admin')} className="btn-outline btn-sm"><Shield className="w-3.5 h-3.5" />管理员 admin</button>

@@ -23,14 +23,14 @@ export default function My() {
   )
   return (
     <div className="space-y-4">
-      <div className="card p-6 flex items-center gap-6 bg-gradient-to-r from-brand-50/60 to-white">
-        <Avatar src={user.avatar} name={user.nickname} size={120} className="border-4 border-white shadow-card" />
-        <div className="flex-1">
+      <div className="card p-4 md:p-6 flex flex-col md:flex-row items-center gap-4 md:gap-6 bg-gradient-to-r from-brand-50/60 to-white">
+        <Avatar src={user.avatar} name={user.nickname} size={96} className="border-4 border-white shadow-card" />
+        <div className="flex-1 max-md:text-center">
           <div className="text-2xl font-semibold">{user.nickname}</div>
           <div className="text-sm text-ink-500 mt-1 flex items-center gap-3"><span>{user.username}</span><Link to="/my/address" className="hover:text-brand-500">收货地址</Link></div>
           <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-ink-900 text-white text-xs px-3 py-1.5"><span className="font-bold text-amber-300">88VIP</span>开卡享20+专属权益，免费领各大会员，退货包运费！点击领权益&gt;&gt;</div>
         </div>
-        <div className="w-[340px]">
+        <div className="w-full md:w-[340px]">
           <div className="grid grid-cols-3 text-center text-sm">
             {[['红包', `${3}元`], ['优惠券', `${validCoupons}张`], ['淘金币抵', `${money(user.coins / 100, 0)}元`]].map(([l, v]) => <div key={l}><span className="text-ink-600">{l}</span> <b className="font-num text-base">{v}</b></div>)}
           </div>
@@ -38,10 +38,10 @@ export default function My() {
         </div>
       </div>
 
-      <div className="grid grid-cols-[1fr_180px_180px_180px] gap-4">
+      <div className="grid grid-cols-[1fr_180px_180px_180px] max-md:!grid-cols-1 max-lg:grid-cols-[1fr_1fr_1fr] gap-3 md:gap-4">
         <div className="card p-5">
           <Link to="/my/orders" className="font-semibold flex items-center gap-1 hover:text-brand-500">我的订单<ChevronRight className="w-4 h-4 text-ink-400" /></Link>
-          <div className="grid grid-cols-5 mt-5 text-center">
+          <div className="grid grid-cols-5 keep-cols mt-5 text-center">
             {[['待付款', count(['unpaid']), 'unpaid'], ['待发货', count(['paid']), 'paid'], ['待收货', count(['shipped']), 'shipped'], ['待评价', count(['received']), 'received'], ['退款/售后', count(['refunding']), 'refund']].map(([l, n, t]) => (
               <Link key={l as string} to={`/my/orders?tab=${t}`} className="hover:text-brand-500"><div className="text-2xl font-num font-semibold">{n as number}</div><div className="text-sm text-ink-600 mt-1">{l as string}</div></Link>
             ))}
@@ -60,7 +60,7 @@ export default function My() {
         </div>
       </div>
 
-      <div><div className="font-semibold text-lg mb-3">猜你喜欢</div><div className="grid grid-cols-5 gap-3">{products.filter(p => p.status === 'on').slice(0, 15).map(p => <ProductCard key={p.id} p={p} />)}</div></div>
+      <div><div className="font-semibold text-lg mb-3">猜你喜欢</div><div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-3">{products.filter(p => p.status === 'on').slice(0, 15).map(p => <ProductCard key={p.id} p={p} />)}</div></div>
     </div>
   )
 }

@@ -36,19 +36,19 @@ export default function Orders() {
 
   return (
     <div>
-      <div className="flex items-center gap-6 border-b border-ink-200 text-[15px]">
-        {TABS.map(([k, l]) => <button key={k} onClick={() => { setSp(k === 'all' ? {} : { tab: k }); setPage(1) }} className={cls('py-3 font-medium relative', tab === k ? 'text-brand-500' : 'text-ink-700 hover:text-ink-900')}>{l}{k === 'received' && counts.received > 0 && <span className="ml-1 font-num">{counts.received}</span>}{tab === k && <span className="absolute left-0 right-0 bottom-0 h-0.5 bg-brand-500 rounded-full" />}</button>)}
+      <div className="flex items-center gap-4 md:gap-6 border-b border-ink-200 text-[15px] overflow-x-auto no-scrollbar">
+        {TABS.map(([k, l]) => <button key={k} onClick={() => { setSp(k === 'all' ? {} : { tab: k }); setPage(1) }} className={cls('py-3 font-medium relative shrink-0', tab === k ? 'text-brand-500' : 'text-ink-700 hover:text-ink-900')}>{l}{k === 'received' && counts.received > 0 && <span className="ml-1 font-num">{counts.received}</span>}{tab === k && <span className="absolute left-0 right-0 bottom-0 h-0.5 bg-brand-500 rounded-full" />}</button>)}
         {tab === 'refund' && <span className="py-3 font-medium text-brand-500 relative">退款/售后<span className="absolute left-0 right-0 bottom-0 h-0.5 bg-brand-500 rounded-full" /></span>}
         <span className="ml-auto text-xs text-ink-500 flex items-center gap-1">⇄ 切回旧版</span>
       </div>
-      <div className="flex items-center gap-2 py-3 text-sm">
+      <div className="flex items-center gap-2 py-3 text-sm flex-wrap">
         <div className="flex items-center h-9 border border-ink-200 rounded-lg overflow-hidden bg-white"><span className="px-3 text-ink-600 flex items-center gap-1 border-r border-ink-200 h-full">全部<ChevronDown className="w-3.5 h-3.5" /></span><input aria-label="搜索订单" value={q} onChange={e => setQ(e.target.value)} placeholder="商品标题/订单号/店铺名/快递单号" className="px-3 h-full w-72 outline-none" /><button aria-label="搜索" className="px-3 text-ink-500"><Search className="w-4 h-4" /></button></div>
         <button className="btn-outline btn-sm h-9"><Filter className="w-3.5 h-3.5" />筛选<ChevronDown className="w-3.5 h-3.5" /></button>
         <button onClick={() => toast('订单已导出为 CSV')} className="btn-outline btn-sm h-9"><Download className="w-3.5 h-3.5" />导出订单<span className="tag bg-brand-500 text-white ml-1">新</span></button>
         <button onClick={() => window.print()} className="btn-outline btn-sm h-9"><Printer className="w-3.5 h-3.5" />打印</button>
         <div className="ml-auto"><Pagination page={page} pages={Math.max(1, Math.ceil(list.length / pageSize))} onChange={setPage} /></div>
       </div>
-      <div className="grid grid-cols-[1fr_120px_140px_140px] text-sm text-ink-500 px-4 py-2 bg-ink-100/60 rounded-lg"><div className="pl-[520px]">订单信息</div><div className="text-center">商品金额</div><div className="text-center">实付款</div><div className="text-center">订单操作</div></div>
+      <div className="hidden md:grid grid-cols-[1fr_120px_140px_140px] text-sm text-ink-500 px-4 py-2 bg-ink-100/60 rounded-lg"><div className="pl-[520px]">订单信息</div><div className="text-center">商品金额</div><div className="text-center">实付款</div><div className="text-center">订单操作</div></div>
       {rows.length === 0 && <div className="card mt-3"><Empty text="没有找到相关订单" icon={<Package className="w-6 h-6" />} /></div>}
       <div className="space-y-3 mt-3">
         {rows.map(o => {
@@ -57,14 +57,14 @@ export default function Orders() {
           const rf = refunds.find(r => r.orderId === o.id)
           return (
             <div key={o.id} className="card overflow-hidden">
-              <div className="flex items-center gap-3 px-4 h-11 bg-ink-50 text-sm">
+              <div className="flex items-center gap-2 md:gap-3 px-3 md:px-4 min-h-[44px] py-1 bg-ink-50 text-xs md:text-sm flex-wrap">
                 <span className="text-ink-700">{fmtDate(o.createdAt, false)}</span><span className="text-ink-500">订单号: <span className="font-num text-ink-800">{o.id}</span></span>
                 <span className={cls('tag text-white', shop.type === 'tmall' ? 'bg-brand-500' : 'bg-brand-400')}>{shop.type === 'tmall' ? '天猫' : 'Plam'}</span><Link to={`/shop/${shop.id}`} className="font-medium hover:text-brand-500">{shop.name}</Link><span className="text-qn-600 text-xs">💬</span>
                 <Link to={`/my/orders/${o.id}`} className="text-brand-500 hover:underline">订单详情 ›</Link>
                 <span className={cls('ml-auto font-medium', st.color)}>{st.label}</span>
                 <span className="text-ink-400">⚑</span><button aria-label="删除订单" onClick={() => toast('订单已移入回收站')} className="text-ink-400 hover:text-brand-500"><Trash2 className="w-4 h-4" /></button>
               </div>
-              <div className="grid grid-cols-[1fr_120px_140px_140px] px-4 py-4 text-sm">
+              <div className="grid grid-cols-[1fr_120px_140px_140px] max-md:!grid-cols-1 px-3 md:px-4 py-3 md:py-4 text-sm max-md:gap-2">
                 <div className="divide-y divide-ink-100">
                   {o.items.map((it, i) => (
                     <div key={i} className="flex gap-3 py-2 first:pt-0 last:pb-0">
@@ -74,9 +74,9 @@ export default function Orders() {
                     </div>
                   ))}
                 </div>
-                <div className="text-center border-l border-ink-100"><div className="font-num">¥{money(o.total)}</div>{rf && <div className={cls('mt-1 text-xs', REFUND_STATUS[rf.status].cls)}>{REFUND_STATUS[rf.status].label}</div>}</div>
-                <div className="text-center border-l border-ink-100"><div>实付款 <b className="font-num text-base">¥{money(o.payAmount)}</b></div><div className="text-xs text-ink-400">含运费: ¥{money(o.freight)}</div>{o.payment && <div className="mt-1 inline-block text-xs border border-ink-200 rounded px-1.5 py-0.5 text-ink-500">{PAY_NAMES[o.payment.provider]}</div>}</div>
-                <div className="text-center border-l border-ink-100 flex flex-col items-center gap-1.5">
+                <div className="text-center border-l border-ink-100 max-md:hidden"><div className="font-num">¥{money(o.total)}</div>{rf && <div className={cls('mt-1 text-xs', REFUND_STATUS[rf.status].cls)}>{REFUND_STATUS[rf.status].label}</div>}</div>
+                <div className="text-center md:border-l border-ink-100 max-md:flex max-md:items-center max-md:justify-end max-md:gap-3 max-md:border-t max-md:pt-2"><div>实付款 <b className="font-num text-base">¥{money(o.payAmount)}</b></div><div className="text-xs text-ink-400">含运费: ¥{money(o.freight)}</div>{o.payment && <div className="mt-1 inline-block text-xs border border-ink-200 rounded px-1.5 py-0.5 text-ink-500">{PAY_NAMES[o.payment.provider]}</div>}</div>
+                <div className="text-center md:border-l border-ink-100 flex md:flex-col items-center justify-end md:justify-start gap-2 md:gap-1.5">
                   {o.status === 'unpaid' && <><button onClick={() => setPayOf(o)} className="btn-primary btn-sm w-24">立即付款</button><button onClick={() => { setOrderStatus(o.id, 'closed'); toast('订单已取消') }} className="text-xs text-ink-500 hover:text-brand-500">取消订单</button></>}
                   {o.status === 'shipped' && <><button onClick={() => { setOrderStatus(o.id, 'received'); toast('确认收货成功') }} className="btn-primary btn-sm w-24">确认收货</button><Link to={`/my/orders/${o.id}`} className="text-xs text-ink-700 hover:text-brand-500">查看物流</Link></>}
                   {o.status === 'received' && <><button onClick={() => setReviewOf(o)} className="btn-primary btn-sm w-24">评价</button><button onClick={() => nav(`/checkout?pid=${o.items[0].productId}&sku=${products.find(p => p.id === o.items[0].productId)?.skus[0].id}&qty=1`)} className="text-xs text-ink-700 hover:text-brand-500">再买一单</button></>}

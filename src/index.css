@@ -45,3 +45,26 @@ input, select, textarea { font: inherit; }
 .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }
+
+/* ---------- 移动端自适应（< 768px） ---------- */
+@media (max-width: 767px) {
+  body { font-size: 13px; }
+  .container-x { padding-left: 12px; padding-right: 12px; }
+  /* 任意模板列（如 grid-cols-[190px_1fr_300px]）在手机上统一堆叠 */
+  [class*="grid-cols-["] { grid-template-columns: minmax(0, 1fr) !important; }
+  .grid-cols-3:not(.keep-cols), .grid-cols-4:not(.keep-cols), .grid-cols-5:not(.keep-cols), .grid-cols-6:not(.keep-cols), .grid-cols-7:not(.keep-cols) { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  /* 宽表格横向滚动 */
+  .card table, main table { display: block; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+  /* 固定宽度控件不撑破屏幕 */
+  .w-72, .w-56, .w-64, .w-\[600px\], .w-\[320px\], .max-w-\[420px\], .max-w-\[640px\] { max-width: 100%; width: 100%; }
+  .sticky.top-0, .sticky.top-4, .sticky.top-16, .sticky.top-20 { position: static; }
+  h1 { font-size: 1.1rem; }
+  .btn-lg { height: 40px; padding-left: 16px; padding-right: 16px; font-size: 14px; }
+  .mobile-pb { padding-bottom: 72px; }
+  /* 工具条/操作行在窄屏自动换行（滚动行与 keep-flex 除外） */
+  main .flex:not(.no-scrollbar):not(.keep-flex):not(.flex-col):not(.flex-nowrap) { flex-wrap: wrap; }
+  main [class*="grid-cols-["] > * { min-width: 0; }
+}
+@media (max-width: 1023px) {
+  .lg-stack[class*="grid-cols-["] { grid-template-columns: minmax(0, 1fr) !important; }
+}

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Home, Star, FileText, Package, Megaphone, Rocket, Headphones, Store, Users, Wallet, BarChart3, Grid2X2, Search, Bell, MessageSquare, Download, BookOpen, ScrollText, Moon, ChevronDown, LogOut, ArrowLeftRight } from 'lucide-react'
+import { Home, Star, FileText, Package, Megaphone, Rocket, Headphones, Store, Users, Wallet, BarChart3, Grid2X2, Search, Bell, MessageSquare, Download, BookOpen, ScrollText, Moon, ChevronDown, LogOut, ArrowLeftRight, Menu, X } from 'lucide-react'
 import { useCurrentShop, useCurrentUser } from '@/lib/hooks'
 import { useDB } from '@/store/db'
 import { useSession } from '@/store/session'
@@ -30,6 +30,7 @@ export default function SellerLayout() {
   const logout = useSession(s => s.logout)
   const { orders, messages, refunds } = useDB()
   const [open, setOpen] = useState<string | null>(null)
+  const [drawer, setDrawer] = useState(false)
   const pending = orders.filter(o => o.shopId === shop.id && o.status === 'paid').length + refunds.filter(r => r.shopId === shop.id && r.status === 'pending').length
   const unread = messages.filter(m => m.shopId === shop.id && m.to === shop.id && !m.read).length
   const activeKey = useMemo(() => {
@@ -47,27 +48,41 @@ export default function SellerLayout() {
     if (p.startsWith('/seller/market')) return 'market'
     return 'home'
   }, [loc.pathname])
-  useEffect(() => { setOpen(null) }, [loc.pathname, loc.search])
+  useEffect(() => { setOpen(null); setDrawer(false) }, [loc.pathname, loc.search])
   const panel = SELLER_MENU.find(m => m.key === (open ?? ''))
   return (
     <div className="min-h-screen bg-[#f4f6fa] flex flex-col">
-      <header className="h-16 bg-white border-b border-ink-200 flex items-center px-5 gap-6 sticky top-0 z-40">
-        <Link to="/seller" className="flex items-center gap-2 select-none"><span className="w-9 h-9 rounded-xl bg-gradient-to-br from-qn-400 to-qn-600 flex items-center justify-center text-white font-black text-lg">P</span><span className="text-[22px] font-bold text-ink-900 tracking-tight">Plam <span className="text-qn-600">商家中心</span></span></Link>
-        <div className="relative w-64"><Search className="w-4 h-4 text-ink-400 absolute left-3 top-1/2 -translate-y-1/2" /><input aria-label="搜索功能" className="input-qn pl-9 bg-ink-50 border-transparent" placeholder="双11 预售规则解读" onKeyDown={e => { if (e.key === 'Enter') nav(`/seller/products?q=${encodeURIComponent((e.target as HTMLInputElement).value)}`) }} /></div>
+      <header className="h-14 md:h-16 bg-white border-b border-ink-200 flex items-center px-3 md:px-5 gap-3 md:gap-6 sticky top-0 z-40">
+        <button aria-label="菜单" onClick={() => setDrawer(true)} className="lg:hidden p-2 -ml-1 rounded-lg hover:bg-ink-50 text-ink-700"><Menu className="w-5 h-5" /></button>
+        <Link to="/seller" className="flex items-center gap-2 select-none"><span className="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-gradient-to-br from-qn-400 to-qn-600 flex items-center justify-center text-white font-black text-lg">P</span><span className="text-lg md:text-[22px] font-bold text-ink-900 tracking-tight whitespace-nowrap">Plam <span className="text-qn-600 hidden sm:inline">商家中心</span></span></Link>
+        <div className="relative w-64 hidden md:block"><Search className="w-4 h-4 text-ink-400 absolute left-3 top-1/2 -translate-y-1/2" /><input aria-label="搜索功能" className="input-qn pl-9 bg-ink-50 border-transparent" placeholder="双11 预售规则解读" onKeyDown={e => { if (e.key === 'Enter') nav(`/seller/products?q=${encodeURIComponent((e.target as HTMLInputElement).value)}`) }} /></div>
         <div className="ml-auto flex items-center gap-1 text-ink-600">
-          {[[<Moon className="w-4 h-4" />, '管家', '/seller/service?tab=ai'], [<ScrollText className="w-4 h-4" />, '协议', '/seller/shop?tab=agreement'], [<Download className="w-4 h-4" />, '下载', '/seller/market'], [<BookOpen className="w-4 h-4" />, '规则', '/seller/shop?tab=rules']].map(([ic, l, to]) => <Link key={l as string} to={to as string} className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg hover:bg-ink-50 text-[11px]">{ic as React.ReactNode}{l as string}</Link>)}
-          <span className="w-px h-6 bg-ink-200 mx-2" />
-          <Link to="/seller/service" className="relative flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg hover:bg-ink-50 text-[11px]"><MessageSquare className="w-4 h-4" />消息<Badge n={unread} className="absolute -top-0.5 right-1" /></Link>
-          <Link to="/seller/orders" className="relative flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg hover:bg-ink-50 text-[11px]"><Bell className="w-4 h-4" />待办<Badge n={pending} className="absolute -top-0.5 right-1" /></Link>
-          <Link to="/seller/market?tab=ticket" className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg hover:bg-ink-50 text-[11px]"><Headphones className="w-4 h-4" />客服</Link>
+          <div className="hidden lg:contents">{[[<Moon className="w-4 h-4" />, '管家', '/seller/service?tab=ai'], [<ScrollText className="w-4 h-4" />, '协议', '/seller/shop?tab=agreement'], [<Download className="w-4 h-4" />, '下载', '/seller/market'], [<BookOpen className="w-4 h-4" />, '规则', '/seller/shop?tab=rules']].map(([ic, l, to]) => <Link key={l as string} to={to as string} className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg hover:bg-ink-50 text-[11px]">{ic as React.ReactNode}{l as string}</Link>)}</div>
+          <span className="w-px h-6 bg-ink-200 mx-2 hidden lg:block" />
+          <Link to="/seller/service" className="relative flex flex-col items-center gap-0.5 px-2 md:px-3 py-1 rounded-lg hover:bg-ink-50 text-[11px] whitespace-nowrap"><MessageSquare className="w-4 h-4" />消息<Badge n={unread} className="absolute -top-0.5 right-1" /></Link>
+          <Link to="/seller/orders" className="relative flex flex-col items-center gap-0.5 px-2 md:px-3 py-1 rounded-lg hover:bg-ink-50 text-[11px] whitespace-nowrap"><Bell className="w-4 h-4" />待办<Badge n={pending} className="absolute -top-0.5 right-1" /></Link>
+          <Link to="/seller/market?tab=ticket" className="hidden md:flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg hover:bg-ink-50 text-[11px]"><Headphones className="w-4 h-4" />客服</Link>
           <div className="relative group ml-3">
-            <button className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-lg hover:bg-ink-50"><Avatar src={shop.logo} name={shop.name} size={36} /><div className="text-left"><div className="text-sm font-medium text-ink-900 max-w-[150px] truncate">{shop.name}</div><div className="text-[11px] text-ink-400">{user?.username}</div></div><ChevronDown className="w-4 h-4 text-ink-400" /></button>
+            <button className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-lg hover:bg-ink-50"><Avatar src={shop.logo} name={shop.name} size={32} /><div className="text-left hidden md:block"><div className="text-sm font-medium text-ink-900 max-w-[150px] truncate">{shop.name}</div><div className="text-[11px] text-ink-400">{user?.username}</div></div><ChevronDown className="w-4 h-4 text-ink-400" /></button>
             <div className="absolute right-0 top-full pt-1 hidden group-hover:block z-50"><div className="bg-white shadow-float rounded-lg py-1 w-40 text-sm"><Link to="/seller/shop" className="block px-3 py-2 hover:bg-ink-50">店铺设置</Link><Link to={`/shop/${shop.id}`} className="block px-3 py-2 hover:bg-ink-50">查看店铺</Link><Link to="/" className="flex items-center gap-1 px-3 py-2 hover:bg-ink-50"><ArrowLeftRight className="w-3.5 h-3.5" />切换到买家</Link><button onClick={() => { logout(); nav('/login') }} className="flex items-center gap-1 w-full text-left px-3 py-2 hover:bg-ink-50 text-ink-500"><LogOut className="w-3.5 h-3.5" />退出登录</button></div></div>
           </div>
         </div>
       </header>
+      {drawer && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div className="absolute inset-0 bg-ink-900/40" onClick={() => setDrawer(false)} />
+          <div className="absolute left-0 top-0 bottom-0 w-[280px] bg-white shadow-pop overflow-auto animate-fadeUp">
+            <div className="h-14 px-4 flex items-center justify-between border-b border-ink-100"><span className="font-semibold">商家中心</span><button aria-label="关闭" onClick={() => setDrawer(false)} className="p-1.5 rounded-md hover:bg-ink-100"><X className="w-4 h-4" /></button></div>
+            <div className="p-3">
+              <NavLink to="/seller" end className={({ isActive }) => cls('flex items-center gap-2 px-3 h-10 rounded-lg text-sm', isActive ? 'bg-qn-50 text-qn-600 font-medium' : 'text-ink-700')}><Home className="w-4 h-4" />首页</NavLink>
+              {SELLER_MENU.filter(m => m.groups).map(m => <div key={m.key} className="mt-2"><div className="flex items-center gap-2 px-3 py-2 text-sm font-semibold text-ink-900">{m.icon}{m.label}</div><div className="flex flex-wrap gap-1.5 px-3 pb-1">{m.groups!.flatMap(g => g.items).map(it => <NavLink key={it.to} to={it.to} className="px-2.5 h-7 rounded-md bg-ink-50 text-xs text-ink-700 flex items-center">{it.label}</NavLink>)}</div></div>)}
+              <Link to="/" className="mt-3 flex items-center gap-2 px-3 h-10 rounded-lg text-sm text-ink-600"><ArrowLeftRight className="w-4 h-4" />切换到买家</Link>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex flex-1">
-        <nav className="w-[108px] bg-white border-r border-ink-200 py-3 sticky top-16 self-start h-[calc(100vh-64px)] flex flex-col" onMouseLeave={() => setOpen(null)}>
+        <nav className="hidden lg:flex w-[108px] bg-white border-r border-ink-200 py-3 sticky top-16 self-start h-[calc(100vh-64px)] flex-col" onMouseLeave={() => setOpen(null)}>
           {SELLER_MENU.map(m => m.to ? (
             <NavLink key={m.key} to={m.to} end onMouseEnter={() => setOpen(null)} className={cls('mx-3 my-0.5 flex items-center gap-2 px-3 h-10 rounded-lg text-[15px] transition', activeKey === m.key ? 'bg-qn-50 text-qn-600 font-medium' : 'text-ink-700 hover:bg-ink-50')}>{m.icon}{m.label}</NavLink>
           ) : (
@@ -81,7 +96,7 @@ export default function SellerLayout() {
             </div>
           )}
         </nav>
-        <main className="flex-1 min-w-0 p-5"><Outlet /></main>
+        <main className="flex-1 min-w-0 p-3 md:p-5"><Outlet /></main>
       </div>
     </div>
   )

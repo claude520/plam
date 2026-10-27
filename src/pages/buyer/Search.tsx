@@ -48,7 +48,7 @@ export default function Search() {
     return (
       <div className="container-x py-4">
         <div className="text-sm text-ink-500 mb-3">共找到 <span className="text-brand-500 font-num">{shopList.length}</span> 家店铺</div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {shopList.map(s => (
             <div key={s.id} className="card p-4 flex items-center gap-4">
               <Avatar src={s.logo} name={s.name} size={56} />
@@ -66,7 +66,7 @@ export default function Search() {
   }
 
   return (
-    <div className="container-x py-4">
+    <div className="container-x py-4 mobile-pb">
       {/* 面包屑 & 相关 */}
       <div className="card px-5 py-3 mb-3 text-sm">
         <div className="flex items-center gap-2 text-ink-500 flex-wrap">
@@ -84,7 +84,7 @@ export default function Search() {
       </div>
 
       {/* 排序条 */}
-      <div className="card px-4 h-12 mb-3 flex items-center gap-1 text-sm">
+      <div className="card px-3 md:px-4 min-h-[48px] py-1 mb-3 flex items-center gap-1 text-sm flex-wrap">
         {([['default', '综合'], ['sales', '销量'], ['new', '新品'], ['price-asc', '价格↑'], ['price-desc', '价格↓']] as const).map(([k, l]) => (
           <button key={k} onClick={() => setSort(k)} className={cls('px-3 h-8 rounded-md', sort === k ? 'bg-brand-500 text-white' : 'hover:bg-ink-100')}>{l}</button>
         ))}
@@ -101,14 +101,14 @@ export default function Search() {
       </div>
 
       {rows.length === 0 ? <div className="card"><Empty text={`没有找到与“${q || catNode?.name || ''}”相关的宝贝，换个关键词试试`} /></div> : view === 'grid' ? (
-        <div className="grid grid-cols-5 gap-3">{rows.map(p => <ProductCard key={p.id} p={p} />)}</div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-3">{rows.map(p => <ProductCard key={p.id} p={p} />)}</div>
       ) : (
         <div className="space-y-3">
           {rows.map(p => {
             const shop = shops.find(s => s.id === p.shopId)
             return (
-              <Link key={p.id} to={`/item/${p.id}`} className="card p-4 flex gap-4 hover:shadow-float transition-shadow">
-                <div className="w-40 h-40 rounded-lg overflow-hidden shrink-0"><Img src={p.images[0]} alt={p.title} w={160} h={160} className="w-full h-full" /></div>
+              <Link key={p.id} to={`/item/${p.id}`} className="card p-3 md:p-4 flex gap-3 md:gap-4 hover:shadow-float transition-shadow">
+                <div className="w-28 h-28 md:w-40 md:h-40 rounded-lg overflow-hidden shrink-0"><Img src={p.images[0]} alt={p.title} w={160} h={160} className="w-full h-full" /></div>
                 <div className="flex-1 min-w-0">
                   <div className="text-[15px] text-ink-900 line-clamp-2">{shop?.type === 'tmall' && <span className="tag bg-brand-500 text-white mr-1">天猫</span>}{p.title}</div>
                   <div className="mt-2 flex items-baseline gap-2"><span className="price text-xs">¥</span><span className="price text-2xl">{money(p.price)}</span>{p.originalPrice && <span className="text-ink-400 line-through text-xs">¥{money(p.originalPrice)}</span>}</div>

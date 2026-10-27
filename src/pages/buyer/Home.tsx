@@ -40,7 +40,7 @@ export default function Home() {
   const running = campaigns.filter(c => c.status === 'running')
 
   const Channel = ({ icon, label, to, color }: { icon: React.ReactNode; label: string; to: string; color: string }) => (
-    <Link to={to} className="flex items-center gap-1.5 text-[15px] text-ink-800 hover:text-brand-500 font-medium"><span className={cls('w-6 h-6 rounded-md flex items-center justify-center text-white', color)}>{icon}</span>{label}</Link>
+    <Link to={to} className="flex items-center gap-1.5 text-sm md:text-[15px] text-ink-800 hover:text-brand-500 font-medium shrink-0"><span className={cls('w-6 h-6 rounded-md flex items-center justify-center text-white', color)}>{icon}</span>{label}</Link>
   )
   const Promo = ({ title, tag, items, to, color }: { title: string; tag: string; items: typeof onSale; to: string; color: string }) => (
     <div className="card p-3 flex flex-col">
@@ -63,10 +63,10 @@ export default function Home() {
     <div className="bg-[#f5f5f7]">
       {/* 顶部活动条 */}
       <div className="bg-gradient-to-r from-[#ff3b1f] via-[#ff5a2e] to-[#ff7a3d]">
-        <div className="container-x h-14 flex items-center justify-between text-white">
-          <div className="flex items-center gap-4">
-            <span className="text-2xl font-black italic tracking-wider drop-shadow">双11开门红</span>
-            <span className="text-lg font-semibold">叠券低至7.2折起</span>
+        <div className="container-x h-11 md:h-14 flex items-center justify-between text-white">
+          <div className="flex items-center gap-2 md:gap-4">
+            <span className="text-lg md:text-2xl font-black italic tracking-wider drop-shadow">双11开门红</span>
+            <span className="text-sm md:text-lg font-semibold">叠券低至7.2折起</span>
             <Countdown />
           </div>
           <Link to="/search?q=双11" className="bg-white text-brand-600 font-semibold rounded-full px-5 py-1.5 text-sm hover:bg-brand-50 transition-colors">立即抢购</Link>
@@ -75,15 +75,15 @@ export default function Home() {
 
       {/* 头部 */}
       <header className="bg-white">
-        <div className="container-x py-4 flex items-center gap-10">
+        <div className="container-x py-2.5 md:py-4 flex items-center gap-3 md:gap-10">
           <Logo />
           <SearchBar />
-          <div className="ml-auto flex items-center gap-3 bg-gradient-to-r from-amber-50 to-brand-50 rounded-xl px-4 py-2 border border-brand-100">
+          <div className="ml-auto hidden lg:flex items-center gap-3 bg-gradient-to-r from-amber-50 to-brand-50 rounded-xl px-4 py-2 border border-brand-100">
             <div className="text-sm"><div className="font-semibold text-ink-900">天天领红包 消费券</div><div className="text-brand-500 text-xs">开启 Plam 淘金 · 每日签到领红包</div></div>
             <Gift className="w-8 h-8 text-brand-500" />
           </div>
         </div>
-        <div className="container-x pb-3 flex items-center gap-8">
+        <div className="container-x pb-3 flex items-center gap-5 md:gap-8 overflow-x-auto no-scrollbar whitespace-nowrap">
           <Channel icon={<Tv className="w-3.5 h-3.5" />} label="Plam 直播" to="/search?q=直播" color="bg-brand-500" />
           <Channel icon={<Store className="w-3.5 h-3.5" />} label="企业采购" to="/search?q=采购" color="bg-qn-500" />
           <Channel icon={<Zap className="w-3.5 h-3.5" />} label="司法拍卖" to="/search?q=拍卖" color="bg-rose-500" />
@@ -96,10 +96,11 @@ export default function Home() {
       </header>
 
       <div className="container-x pt-3">
+        <div className="lg:hidden -mx-1 mb-3 flex gap-2 overflow-x-auto no-scrollbar px-1">{topCats.map(c => <Link key={c.id} to={`/search?cat=${c.id}`} className="shrink-0 px-3 h-8 rounded-full bg-white shadow-card text-sm text-ink-700 flex items-center">{c.name}</Link>)}</div>
         {/* 首屏三栏 */}
         <div className="grid grid-cols-[190px_1fr_300px] gap-3 items-stretch">
           {/* 类目 */}
-          <div className="card py-2 relative" onMouseLeave={() => setHoverCat(null)}>
+          <div className="card py-2 relative hidden lg:block" onMouseLeave={() => setHoverCat(null)}>
             <div className="px-4 py-1.5 text-brand-500 font-semibold text-sm flex items-center gap-1"><Flame className="w-4 h-4" />双11开门红 · 爆款8.5折起</div>
             {topCats.map(c => {
               const subs = categories.filter(x => x.parentId === c.id)
@@ -126,13 +127,13 @@ export default function Home() {
 
           {/* 中部 */}
           <div className="grid grid-rows-[auto_1fr] gap-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="relative rounded-xl2 overflow-hidden h-[250px] shadow-card">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="relative rounded-xl2 overflow-hidden h-[180px] md:h-[250px] shadow-card">
                 {heroBanners.map((b, i) => (
-                  <Link key={b.id} to={b.link} className={cls('absolute inset-0 p-7 flex flex-col justify-center text-white transition-opacity duration-700', i === slide ? 'opacity-100' : 'opacity-0 pointer-events-none')} style={{ background: b.gradient }}>
+                  <Link key={b.id} to={b.link} className={cls('absolute inset-0 p-5 md:p-7 flex flex-col justify-center text-white transition-opacity duration-700', i === slide ? 'opacity-100' : 'opacity-0 pointer-events-none')} style={{ background: b.gradient }}>
                     <div className="text-xs font-semibold tracking-widest opacity-80 mb-2">双11 · 开门红</div>
-                    <div className="text-4xl font-black mb-2 drop-shadow">{b.title}</div>
-                    <div className="text-lg font-medium opacity-95">{b.subtitle}</div>
+                    <div className="text-3xl md:text-4xl font-black mb-2 drop-shadow">{b.title}</div>
+                    <div className="text-base md:text-lg font-medium opacity-95">{b.subtitle}</div>
                     <div className="mt-6"><span className="inline-block bg-white/95 text-ink-900 rounded-full px-5 py-2 text-sm font-semibold">立即抢购 →</span></div>
                     <Sparkles className="absolute right-6 bottom-6 w-24 h-24 opacity-20" />
                   </Link>
@@ -141,7 +142,7 @@ export default function Home() {
                   {heroBanners.map((b, i) => <button key={b.id} aria-label={`第${i + 1}张`} onClick={() => setSlide(i)} className="h-6 min-w-[24px] flex items-center justify-center"><span className={cls('h-1.5 rounded-full transition-all', i === slide ? 'w-5 bg-white' : 'w-1.5 bg-white/50')} /></button>)}
                 </div>
               </div>
-              <div className="rounded-xl2 overflow-hidden h-[250px] shadow-card bg-gradient-to-br from-[#ff4d4d] to-[#ff1f6b] p-4 text-white relative">
+              <div className="rounded-xl2 overflow-hidden h-[250px] shadow-card bg-gradient-to-br from-[#ff4d4d] to-[#ff1f6b] p-4 text-white relative hidden md:block">
                 <div className="flex items-center gap-2 mb-3"><span className="text-xl font-black italic">双11</span><span className="font-semibold text-lg">百亿补贴 · 买贵必赔</span></div>
                 <div className="grid grid-cols-2 gap-3">
                   {pick([3, 4]).map(p => (
@@ -153,7 +154,7 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               <Promo title="领券中心" tag="双11" items={pick([8, 12])} to="/my/coupons" color="bg-brand-500" />
               <Promo title="Plam 直播" tag="双11" items={pick([14, 20])} to="/search?q=直播" color="bg-rose-600" />
               <Promo title="国家补贴" tag="双11" items={pick([0, 1])} to="/search?q=国补" color="bg-emerald-700" />
@@ -162,7 +163,7 @@ export default function Home() {
           </div>
 
           {/* 右侧用户卡 */}
-          <div className="flex flex-col gap-3">
+          <div className="hidden lg:flex flex-col gap-3">
             <div className="card p-5 flex-1">
               {user ? (
                 <>
@@ -197,7 +198,7 @@ export default function Home() {
         </div>
 
         {/* 品牌店铺横条 */}
-        <div className="card mt-4 p-4 flex items-center gap-6 overflow-x-auto no-scrollbar">
+        <div className="card mt-3 md:mt-4 p-3 md:p-4 flex items-center gap-4 md:gap-6 overflow-x-auto no-scrollbar">
           <div className="shrink-0 font-semibold text-ink-900 flex items-center gap-1"><Store className="w-4 h-4 text-brand-500" />品牌旗舰</div>
           {shops.filter(s => s.status === 'open').map(s => (
             <Link key={s.id} to={`/shop/${s.id}`} className="shrink-0 flex items-center gap-2 text-sm text-ink-700 hover:text-brand-500"><Avatar src={s.logo} name="" size={28} />{s.name}</Link>
@@ -205,15 +206,15 @@ export default function Home() {
         </div>
 
         {/* 信息流 */}
-        <div className="sticky top-0 z-30 bg-[#f5f5f7] pt-4 pb-3">
-          <div className="card px-3 py-2 flex items-center gap-2">
+        <div className="sticky top-0 z-30 bg-[#f5f5f7] pt-3 md:pt-4 pb-3">
+          <div className="card px-3 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
             {feedTabs.map(t => (
-              <button key={t} onClick={() => setFeedTab(t)} className={cls('px-4 h-8 rounded-full text-sm font-medium transition-colors', feedTab === t ? 'bg-brand-500 text-white' : 'text-ink-700 hover:bg-ink-100')}>{t === '猜你喜欢' ? '♥ 猜你喜欢' : t}</button>
+              <button key={t} onClick={() => setFeedTab(t)} className={cls('px-3 md:px-4 h-8 rounded-full text-sm font-medium transition-colors shrink-0', feedTab === t ? 'bg-brand-500 text-white' : 'text-ink-700 hover:bg-ink-100')}>{t === '猜你喜欢' ? '♥ 猜你喜欢' : t}</button>
             ))}
             <button onClick={() => setSeedShift(s => s + 1)} className="ml-auto btn-ghost btn-sm text-ink-500" aria-label="换一批"><RefreshCw className="w-3.5 h-3.5" />换一批</button>
           </div>
         </div>
-        <div className="grid grid-cols-5 gap-3 pb-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-3 pb-6">
           {feed.map((p, i) => <ProductCard key={p.id} p={p} eager={i < 5} />)}
         </div>
         <div className="text-center text-ink-400 text-sm pb-4">— 已经到底啦，去搜索看看更多宝贝 —</div>

@@ -30,12 +30,12 @@ export default function Cart() {
           <span className="text-brand-600 font-bold text-lg">双11开门红</span><span className="text-brand-600 font-semibold">叠券低至7.2折起</span>
         </div>
       </div>
-      <div className="container-x py-4 grid grid-cols-[1fr_340px] gap-4 items-start">
+      <div className="container-x py-4 grid grid-cols-[1fr_340px] lg-stack gap-4 items-start mobile-pb">
         <div>
           <div className="flex items-center gap-6 border-b border-ink-200 mb-3 text-[15px]">
             {([['all', `全部商品(${rows.length})`], ['discount', '⚡ 官方立减'], ['drop', '⚡ 降价']] as const).map(([k, l]) => <button key={k} onClick={() => setTab(k)} className={cls('py-2.5 font-semibold relative', tab === k ? 'text-brand-500' : 'text-ink-700')}>{l}{tab === k && <span className="absolute left-0 right-0 bottom-0 h-0.5 bg-brand-500 rounded-full" />}</button>)}
           </div>
-          <div className="flex items-center gap-3 mb-3 text-sm">
+          <div className="flex items-center gap-3 mb-3 text-sm flex-wrap">
             <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="accent-brand-500 w-4 h-4" checked={allChecked} onChange={e => toggleAllCart(e.target.checked)} />全选</label>
             <button onClick={() => { if (!checked.length) return toast('请先选择宝贝', 'error'); checked.forEach(r => toggleFavorite(r.p.id)); removeCart(checked.map(r => r.c.id)); toast('已移入收藏夹') }} className="btn-ghost btn-sm">移入收藏</button>
             <button onClick={() => { if (!checked.length) return toast('请先选择宝贝', 'error'); setConfirm(checked.map(r => r.c.id)) }} className="btn-ghost btn-sm">删除</button>
@@ -56,7 +56,7 @@ export default function Cart() {
                   </div>
                   <div className="divide-y divide-ink-100">
                     {items.map(({ c, p, sku }) => (
-                      <div key={c.id} className="py-4 grid grid-cols-[24px_96px_1fr_140px_150px_120px_80px] gap-3 items-center">
+                      <div key={c.id} className="py-4 grid grid-cols-[24px_96px_1fr_140px_150px_120px_80px] max-md:!grid-cols-[24px_80px_1fr] gap-3 items-center">
                         <input type="checkbox" aria-label="选择" className="accent-brand-500 w-4 h-4" checked={c.checked} onChange={e => updateCart(c.id, { checked: e.target.checked })} />
                         <Link to={`/item/${p.id}`} className="w-24 h-24 rounded-lg overflow-hidden"><Img src={p.images[0]} alt={p.title} w={96} h={96} className="w-full h-full" /></Link>
                         <div className="min-w-0">
@@ -64,10 +64,10 @@ export default function Cart() {
                           <div className="text-xs text-ink-400 mt-1">{p.attrs.map(a => `${a.name}：${sku.attrs[a.name]}`).join('  ')}</div>
                           <div className="flex gap-1.5 mt-1.5">{p.tags.slice(0, 3).map(t => <span key={t} className="text-[11px] text-brand-500">{t}</span>)}{p.freeShipping && <span className="text-[11px] text-ink-500">包邮</span>}</div>
                         </div>
-                        <div className="text-xs"><div className="text-brand-500">平台加补后 <span className="price text-sm">¥{money(sku.price * 0.9)}</span> ›</div><div className="text-brand-500 mt-0.5">距加入降 ¥{money(sku.price * 0.1)}</div><div className="text-ink-400 mt-0.5">¥ {money(sku.price)}</div></div>
-                        <div className="flex items-center justify-center"><div className="flex items-center border border-ink-200 rounded-lg overflow-hidden"><button aria-label="减少" onClick={() => updateCart(c.id, { qty: Math.max(1, c.qty - 1) })} className="w-8 h-8 hover:bg-ink-50 flex items-center justify-center"><Minus className="w-3.5 h-3.5" /></button><span className="w-10 text-center font-num text-sm">{c.qty}</span><button aria-label="增加" onClick={() => updateCart(c.id, { qty: Math.min(sku.stock, c.qty + 1) })} className="w-8 h-8 hover:bg-ink-50 flex items-center justify-center"><Plus className="w-3.5 h-3.5" /></button></div></div>
-                        <div className="text-right price text-base">¥{money(sku.price * c.qty)}</div>
-                        <div className="text-xs text-ink-500 flex flex-col items-end gap-1.5"><button onClick={() => { toggleFavorite(p.id); removeCart([c.id]); toast('已移入收藏夹') }} className="hover:text-brand-500 flex items-center gap-0.5"><Heart className="w-3 h-3" />移入收藏</button><button onClick={() => setConfirm([c.id])} className="hover:text-brand-500 flex items-center gap-0.5"><Trash2 className="w-3 h-3" />删除</button></div>
+                        <div className="text-xs max-md:col-start-3"><div className="text-brand-500">平台加补后 <span className="price text-sm">¥{money(sku.price * 0.9)}</span> ›</div><div className="text-brand-500 mt-0.5">距加入降 ¥{money(sku.price * 0.1)}</div><div className="text-ink-400 mt-0.5">¥ {money(sku.price)}</div></div>
+                        <div className="flex items-center justify-center max-md:col-start-3 max-md:justify-start"><div className="flex items-center border border-ink-200 rounded-lg overflow-hidden"><button aria-label="减少" onClick={() => updateCart(c.id, { qty: Math.max(1, c.qty - 1) })} className="w-8 h-8 hover:bg-ink-50 flex items-center justify-center"><Minus className="w-3.5 h-3.5" /></button><span className="w-10 text-center font-num text-sm">{c.qty}</span><button aria-label="增加" onClick={() => updateCart(c.id, { qty: Math.min(sku.stock, c.qty + 1) })} className="w-8 h-8 hover:bg-ink-50 flex items-center justify-center"><Plus className="w-3.5 h-3.5" /></button></div></div>
+                        <div className="text-right price text-base max-md:col-start-3 max-md:text-left">¥{money(sku.price * c.qty)}</div>
+                        <div className="text-xs text-ink-500 flex flex-col items-end gap-1.5 max-md:col-start-3 max-md:flex-row max-md:items-center max-md:gap-4"><button onClick={() => { toggleFavorite(p.id); removeCart([c.id]); toast('已移入收藏夹') }} className="hover:text-brand-500 flex items-center gap-0.5"><Heart className="w-3 h-3" />移入收藏</button><button onClick={() => setConfirm([c.id])} className="hover:text-brand-500 flex items-center gap-0.5"><Trash2 className="w-3 h-3" />删除</button></div>
                       </div>
                     ))}
                   </div>
@@ -75,10 +75,10 @@ export default function Cart() {
               )
             })}
           </div>
-          <div className="mt-8"><div className="font-semibold text-lg mb-3">你可能还喜欢</div><div className="grid grid-cols-4 gap-3">{products.filter(p => p.status === 'on').slice(20, 28).map(p => <ProductCard key={p.id} p={p} />)}</div></div>
+          <div className="mt-8"><div className="font-semibold text-lg mb-3">你可能还喜欢</div><div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">{products.filter(p => p.status === 'on').slice(20, 28).map(p => <ProductCard key={p.id} p={p} />)}</div></div>
         </div>
 
-        <div className="card p-5 sticky top-4">
+        <div className="card p-5 sticky top-4 max-lg:order-first">
           <div className="font-semibold text-base mb-4">结算明细</div>
           {checked.length === 0 ? (
             <div className="py-8 text-center"><div className="w-24 h-24 mx-auto rounded-full bg-brand-50 flex items-center justify-center"><ShoppingCart className="w-10 h-10 text-brand-300" /></div><div className="text-brand-500 font-semibold mt-4">选择商品查看实际支付价格</div></div>

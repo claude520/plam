@@ -37,13 +37,13 @@ export default function Item() {
 
   return (
     <div className="container-x py-4">
-      <div className="text-xs text-ink-500 mb-3 flex items-center gap-1.5"><Link to="/" className="hover:text-brand-500">首页</Link><ChevronRight className="w-3 h-3" /><span>{catName}</span><ChevronRight className="w-3 h-3" /><span className="text-ink-800 truncate max-w-md">{p.title}</span></div>
-      <div className="card p-6 grid grid-cols-[460px_1fr_240px] gap-8">
+      <div className="text-xs text-ink-500 mb-3 flex items-center gap-1.5 whitespace-nowrap overflow-hidden"><Link to="/" className="hover:text-brand-500 shrink-0">首页</Link><ChevronRight className="w-3 h-3" /><span>{catName}</span><ChevronRight className="w-3 h-3" /><span className="text-ink-800 truncate max-w-md min-w-0">{p.title}</span></div>
+      <div className="card p-3 md:p-6 grid grid-cols-[460px_1fr_240px] lg-stack gap-5 md:gap-8">
         {/* 图片 */}
         <div>
           <div className="aspect-square rounded-xl overflow-hidden border border-ink-100"><Img src={p.images[img]} alt={p.title} w={800} h={800} eager className="w-full h-full" /></div>
-          <div className="flex gap-2 mt-3">
-            {p.images.map((src, i) => <button key={src} aria-label={`图片${i + 1}`} onMouseEnter={() => setImg(i)} onClick={() => setImg(i)} className={cls('w-16 h-16 rounded-lg overflow-hidden border-2 transition', i === img ? 'border-brand-500' : 'border-transparent hover:border-ink-300')}><Img src={src.replace('/800/800', '/120/120')} alt="" w={64} h={64} className="w-full h-full" /></button>)}
+          <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar">
+            {p.images.map((src, i) => <button key={src} aria-label={`图片${i + 1}`} onMouseEnter={() => setImg(i)} onClick={() => setImg(i)} className={cls('w-14 h-14 md:w-16 md:h-16 shrink-0 rounded-lg overflow-hidden border-2 transition', i === img ? 'border-brand-500' : 'border-transparent hover:border-ink-300')}><Img src={src.replace('/800/800', '/120/120')} alt="" w={64} h={64} className="w-full h-full" /></button>)}
           </div>
           <div className="flex items-center gap-5 mt-4 text-sm text-ink-500">
             <button onClick={() => { toggleFavorite(p.id); toast(fav ? '已取消收藏' : '收藏成功') }} className={cls('flex items-center gap-1 hover:text-brand-500', fav && 'text-brand-500')}><Heart className={cls('w-4 h-4', fav && 'fill-brand-500')} />{fav ? '已收藏' : '收藏'}（{compact(p.favorites + (fav ? 1 : 0))}）</button>
@@ -53,12 +53,12 @@ export default function Item() {
 
         {/* 信息 */}
         <div className="min-w-0">
-          <h1 className="text-lg font-semibold text-ink-900 leading-7">{shop.type === 'tmall' && <span className="tag bg-brand-500 text-white mr-1.5 align-middle">天猫</span>}{p.title}</h1>
+          <h1 className="text-base md:text-lg font-semibold text-ink-900 leading-6 md:leading-7">{shop.type === 'tmall' && <span className="tag bg-brand-500 text-white mr-1.5 align-middle">天猫</span>}{p.title}</h1>
           {p.subtitle && <div className="text-brand-500 text-sm mt-1">{p.subtitle}</div>}
           <div className="mt-4 rounded-xl bg-gradient-to-r from-brand-50 to-amber-50 border border-brand-100 p-4">
             <div className="flex items-baseline gap-3">
               <span className="text-ink-500 text-sm w-14">促销价</span>
-              <span className="price text-sm">¥</span><span className="price text-4xl">{money(price)}</span>
+              <span className="price text-sm">¥</span><span className="price text-3xl md:text-4xl">{money(price)}</span>
               {p.originalPrice && <span className="text-ink-400 line-through text-sm font-num">¥{money(p.originalPrice)}</span>}
               {p.tags[0] && <span className="tag bg-brand-500 text-white ml-2">{p.tags[0]}</span>}
             </div>
@@ -81,14 +81,14 @@ export default function Item() {
             <div className="flex items-center border border-ink-200 rounded-lg overflow-hidden"><button aria-label="减少" onClick={() => setQty(q => Math.max(1, q - 1))} className="w-8 h-8 hover:bg-ink-50 flex items-center justify-center"><Minus className="w-3.5 h-3.5" /></button><input aria-label="数量" value={qty} onChange={e => setQty(Math.max(1, Number(e.target.value) || 1))} className="w-12 h-8 text-center outline-none text-sm font-num" /><button aria-label="增加" onClick={() => setQty(q => q + 1)} className="w-8 h-8 hover:bg-ink-50 flex items-center justify-center"><Plus className="w-3.5 h-3.5" /></button></div>
             <span className="text-ink-400 text-xs">库存 {sku ? sku.stock : p.stock} 件</span>
           </div>
-          <div className="mt-6 flex gap-3">
+          <div className="mt-6 flex gap-3 max-md:fixed max-md:bottom-14 max-md:left-0 max-md:right-0 max-md:z-40 max-md:bg-white max-md:p-2 max-md:border-t max-md:border-ink-200 max-md:[&>button]:flex-1">
             <button onClick={buyNow} className="btn-lg btn bg-gradient-to-r from-amber-400 to-brand-400 text-white font-semibold px-10 hover:opacity-90">立即购买</button>
             <button onClick={addCart} className="btn-primary btn-lg px-10">加入购物车</button>
           </div>
         </div>
 
         {/* 店铺卡 */}
-        <aside className="border-l border-ink-100 pl-6">
+        <aside className="lg:border-l border-ink-100 lg:pl-6 max-lg:border-t max-lg:pt-4">
           <div className="flex items-center gap-3"><Avatar src={shop.logo} name={shop.name} size={44} /><div className="min-w-0"><div className="font-semibold truncate">{shop.name}</div><div className="text-xs text-ink-400">{shop.type === 'tmall' ? '天猫旗舰店' : '淘宝店铺'} · 粉丝 {compact(shop.fans)}</div></div></div>
           <div className="mt-4 space-y-1.5 text-xs">
             {[['宝贝描述', shop.score.desc], ['卖家服务', shop.score.service], ['物流服务', shop.score.logistics]].map(([l, v]) => <div key={l as string} className="flex items-center justify-between"><span className="text-ink-500">{l}</span><span className="font-num text-ink-800">{(v as number).toFixed(1)} <span className="text-brand-500">高</span></span></div>)}
@@ -104,7 +104,7 @@ export default function Item() {
 
       {/* 详情 / 评价 */}
       <div className="grid grid-cols-[210px_1fr] gap-4 mt-4">
-        <div className="card p-4 self-start">
+        <div className="card p-4 self-start max-md:hidden">
           <div className="font-semibold mb-3 text-sm">看了又看</div>
           <div className="space-y-3">{similar.map(x => <Link key={x.id} to={`/item/${x.id}`} className="block group"><div className="aspect-square rounded-lg overflow-hidden"><Img src={x.images[0]} alt={x.title} w={180} h={180} className="w-full h-full group-hover:scale-105 transition-transform" /></div><div className="text-xs line-clamp-2 mt-1 text-ink-700">{x.title}</div><div className="price text-sm">¥{money(x.price)}</div></Link>)}</div>
         </div>
@@ -112,7 +112,7 @@ export default function Item() {
           <div className="px-5"><Tabs items={[{ key: 'detail', label: '宝贝详情' }, { key: 'reviews', label: '累计评价', count: prodReviews.length }, { key: 'params', label: '规格参数' }]} value={tab} onChange={setTab} size="lg" /></div>
           {tab === 'detail' && (
             <div className="p-6">
-              <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm text-ink-600 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-sm text-ink-600 mb-6">
                 <div>品牌：{shop.name.replace(/旗舰店|官方|专营店/g, '')}</div><div>类目：{catName}</div>
                 {p.attrs.map(a => <div key={a.name}>{a.name}：{a.values.join(' / ')}</div>)}
                 <div>上架时间：{fmtDate(p.createdAt, false)}</div><div>商品编号：{p.id.toUpperCase()}2026</div>
@@ -151,7 +151,7 @@ export default function Item() {
         </div>
       </div>
 
-      <div className="mt-6"><div className="font-semibold text-lg mb-3">猜你喜欢</div><div className="grid grid-cols-5 gap-3">{products.filter(x => x.id !== p.id && x.status === 'on').slice(0, 10).map(x => <ProductCard key={x.id} p={x} />)}</div></div>
+      <div className="mt-6"><div className="font-semibold text-lg mb-3">猜你喜欢</div><div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-3 mobile-pb">{products.filter(x => x.id !== p.id && x.status === 'on').slice(0, 10).map(x => <ProductCard key={x.id} p={x} />)}</div></div>
     </div>
   )
 }

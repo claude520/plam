@@ -28,10 +28,10 @@ export default function SellerDashboard() {
   const dim = new Date(calMonth.getFullYear(), calMonth.getMonth() + 1, 0).getDate()
 
   return (
-    <div className="grid grid-cols-[1fr_356px] gap-4 items-start">
+    <div className="grid grid-cols-[1fr_356px] lg-stack gap-4 items-start">
       <div className="space-y-4">
-        {top && <Link to={top.link} className="block rounded-xl2 overflow-hidden h-16 relative" style={{ background: top.gradient }}><div className="absolute inset-0 flex items-center px-8 text-white"><Flame className="w-8 h-8 mr-4 opacity-90" /><span className="text-2xl font-black italic tracking-wide drop-shadow">{top.title}</span><span className="ml-auto bg-white text-brand-600 font-semibold rounded-full px-5 py-1.5 text-sm">{top.subtitle}</span></div></Link>}
-        <div className="rounded-xl2 overflow-hidden bg-gradient-to-r from-qn-500 to-qn-700 text-white grid grid-cols-6 relative">
+        {top && <Link to={top.link} className="block rounded-xl2 overflow-hidden min-h-[56px] md:h-16 relative" style={{ background: top.gradient }}><div className="md:absolute md:inset-0 flex items-center px-4 md:px-8 py-2.5 md:py-0 gap-3 text-white"><Flame className="w-6 h-6 md:w-8 md:h-8 shrink-0 opacity-90" /><span className="text-base md:text-2xl font-black italic tracking-wide drop-shadow leading-tight">{top.title}</span><span className="ml-auto shrink-0 bg-white text-brand-600 font-semibold rounded-full px-4 md:px-5 py-1.5 text-xs md:text-sm whitespace-nowrap">{top.subtitle}</span></div></Link>}
+        <div className="rounded-xl2 overflow-hidden bg-gradient-to-r from-qn-500 to-qn-700 text-white grid grid-cols-6 max-md:!grid-cols-3 relative">
           <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 10% 20%, #fff 0, transparent 30%)' }} />
           {todo.map(([l, n, to]) => <Link key={l} to={to} className="relative py-5 text-center hover:bg-white/10 transition"><div className="text-3xl font-num font-bold">{n}</div><div className="text-sm opacity-90 mt-1">{l}</div></Link>)}
         </div>
@@ -58,7 +58,7 @@ export default function SellerDashboard() {
         </section>
         <section className="card p-5">
           <div className="flex items-center justify-between"><h2 className="font-semibold text-base flex items-center gap-2">我的应用<span className="text-xs text-ink-400 font-normal">常用工具一键直达</span></h2><Link to="/seller/market" className="text-xs text-ink-400 flex items-center hover:text-qn-600">服务市场<ChevronRight className="w-3.5 h-3.5" /></Link></div>
-          <div className="grid grid-cols-6 gap-3 mt-4">
+          <div className="grid grid-cols-6 max-md:!grid-cols-3 gap-3 mt-4">
             {[[<ClipboardList />, '工单中心', '/seller/market?tab=ticket', 'bg-emerald-500'], [<BarChart3 />, '生意参谋', '/seller/data', 'bg-qn-500'], [<Users />, '员工管理', '/seller/shop?tab=staff', 'bg-violet-500'], [<Truck />, '物流管家', '/seller/logistics', 'bg-sky-500'], [<Package />, '发布商品', '/seller/products/new', 'bg-brand-500'], [<Bot />, 'AI 生意管家', '/seller/service?tab=ai', 'bg-pink-500']].map(([ic, l, to, c]) => (
               <Link key={l as string} to={to as string} className="flex flex-col items-center gap-2 py-3 rounded-xl hover:bg-ink-50 transition"><span className={cls('w-12 h-12 rounded-2xl text-white flex items-center justify-center [&>svg]:w-6 [&>svg]:h-6', c as string)}>{ic as React.ReactNode}</span><span className="text-sm">{l as string}</span></Link>
             ))}

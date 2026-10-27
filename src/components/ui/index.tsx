@@ -63,7 +63,7 @@ export function Confirm({ open, onClose, onOk, title = '确认操作', desc, dan
 // ---------- Tabs ----------
 export function Tabs<T extends string>({ items, value, onChange, accent = 'brand', size = 'md', className }: { items: { key: T; label: ReactNode; count?: number }[]; value: T; onChange: (k: T) => void; accent?: 'brand' | 'qn'; size?: 'md' | 'lg'; className?: string }) {
   return (
-    <div className={cls('flex items-center gap-6 border-b border-ink-100', className)} role="tablist">
+    <div className={cls('flex items-center gap-4 md:gap-6 border-b border-ink-100 overflow-x-auto no-scrollbar', className)} role="tablist">
       {items.map(it => (
         <button key={it.key} role="tab" aria-selected={value === it.key} onClick={() => onChange(it.key)}
           className={cls('relative py-3 font-medium transition-colors whitespace-nowrap', size === 'lg' ? 'text-base' : 'text-sm', value === it.key ? (accent === 'brand' ? 'text-brand-500' : 'text-qn-600') : 'text-ink-600 hover:text-ink-900')}>
@@ -203,9 +203,9 @@ export function Img({ src, alt, className, w = 400, h = 400, eager }: { src: str
 
 export function PageHeader({ title, desc, extra }: { title: ReactNode; desc?: ReactNode; extra?: ReactNode }) {
   return (
-    <div className="flex items-start justify-between mb-4">
+    <div className="flex flex-col md:flex-row md:items-start justify-between gap-3 mb-4">
       <div><h1 className="text-xl font-semibold text-ink-900">{title}</h1>{desc && <p className="text-ink-500 text-sm mt-1">{desc}</p>}</div>
-      {extra && <div className="flex gap-2">{extra}</div>}
+      {extra && <div className="flex gap-2 flex-wrap">{extra}</div>}
     </div>
   )
 }

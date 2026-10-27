@@ -21,9 +21,9 @@ export function ProductCard({ p, size = 'md', eager }: { p: Product; size?: 'sm'
         <div className="text-[13px] text-ink-800 line-clamp-2 leading-[18px] mt-1 min-h-[36px]">
           {shop?.type === 'tmall' && <span className="tag bg-brand-500 text-white mr-1 align-middle">天猫</span>}{p.title}
         </div>
-        <div className="flex items-center justify-between mt-2 text-xs text-ink-400">
-          <span className="truncate max-w-[60%]">{shop?.name}</span>
-          <span>{compact(p.sales)}人付款</span>
+        <div className="flex items-center justify-between mt-2 text-[11px] md:text-xs text-ink-400 gap-1">
+          <span className="truncate">{shop?.name}</span>
+          <span className="whitespace-nowrap shrink-0">{compact(p.sales)}人付款</span>
         </div>
         {p.tags.length > 1 && <div className="flex gap-1 mt-1.5 flex-wrap">{p.tags.slice(1, 3).map(t => <span key={t} className="tag-red">{t}</span>)}</div>}
       </div>

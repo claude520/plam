@@ -51,14 +51,14 @@ export default function Checkout() {
   }
 
   return (
-    <div className="container-x py-6">
-      <div className="card px-8 py-5 mb-4"><Steps steps={['确认订单信息', '选择支付方式', '支付成功']} current={step} /></div>
+    <div className="container-x py-4 md:py-6 mobile-pb">
+      <div className="card px-4 md:px-8 py-4 md:py-5 mb-4 overflow-x-auto"><Steps steps={['确认订单信息', '选择支付方式', '支付成功']} current={step} /></div>
       {step === 0 && (
-        <div className="grid grid-cols-[1fr_320px] gap-4 items-start">
+        <div className="grid grid-cols-[1fr_320px] lg-stack gap-4 items-start">
           <div className="space-y-4">
             <div className="card p-5">
               <div className="flex items-center justify-between mb-3"><div className="font-semibold flex items-center gap-1.5"><MapPin className="w-4 h-4 text-brand-500" />收货地址</div><button onClick={() => setEditing({ id: genId('a'), userId: user.id, name: '', phone: '', region: '', detail: '', isDefault: myAddrs.length === 0 })} className="btn-ghost btn-sm text-qn-600"><Plus className="w-3.5 h-3.5" />新增地址</button></div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {myAddrs.map(a => (
                   <button key={a.id} onClick={() => setAddrId(a.id)} className={cls('text-left rounded-xl border-2 p-3.5 relative transition', addrId === a.id ? 'border-brand-500 bg-brand-50/40' : 'border-ink-200 hover:border-ink-300')}>
                     <div className="flex items-center gap-2 text-sm"><span className="font-semibold">{a.name}</span><span className="text-ink-500">{a.phone}</span>{a.isDefault && <span className="tag-red">默认</span>}</div>
@@ -80,7 +80,7 @@ export default function Checkout() {
                   </div>
                 ))}
               </div>
-              <div className="mt-3 grid grid-cols-2 gap-4 text-sm">
+              <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <Field label="配送方式"><div className="input flex items-center text-ink-700">{freight === 0 ? '快递 免邮' : `快递 ¥${freight}`}</div></Field>
                 <Field label="订单备注"><input className="input" value={note} onChange={e => setNote(e.target.value)} placeholder="选填，对本次交易的说明" /></Field>
               </div>
@@ -107,11 +107,11 @@ export default function Checkout() {
         </div>
       )}
       {step === 1 && order && (
-        <div className="grid grid-cols-[1fr_320px] gap-4 items-start">
-          <div className="card p-6">
+        <div className="grid grid-cols-[1fr_320px] lg-stack gap-4 items-start">
+          <div className="card p-4 md:p-6">
             <div className="flex items-center justify-between mb-5"><div><div className="font-semibold text-lg">订单提交成功，请尽快付款</div><div className="text-xs text-ink-500 mt-1">订单号 {order.id} · 请在 30 分钟内完成支付，超时订单将自动关闭</div></div><div className="price text-3xl">¥{money(order.payAmount)}</div></div>
             <div className="font-semibold mb-3">选择支付方式</div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {paymentProviders.filter(p => p.enabled).map(p => (
                 <button key={p.id} onClick={() => setProvider(p.code)} className={cls('flex items-center gap-3 rounded-xl border-2 p-4 text-left transition', provider === p.code ? 'border-brand-500 bg-brand-50/40' : 'border-ink-200 hover:border-ink-300')}>
                   <span className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold" style={{ background: p.logoColor }}>{p.code === 'balance' ? <Wallet className="w-5 h-5" /> : p.name.slice(0, 1)}</span>
@@ -136,7 +136,7 @@ export default function Checkout() {
           <div className="w-20 h-20 mx-auto rounded-full bg-emerald-50 flex items-center justify-center"><Check className="w-10 h-10 text-emerald-500" /></div>
           <div className="text-2xl font-semibold mt-4">支付成功</div>
           <div className="text-ink-500 mt-2">实付 <span className="price text-xl">¥{money(order.payAmount)}</span> · 通过 {PAY_NAMES[provider]} · 订单号 {order.id}</div>
-          <div className="flex justify-center gap-3 mt-8"><Link to={`/my/orders/${order.id}`} className="btn-primary btn-lg px-8">查看订单</Link><Link to="/" className="btn-outline btn-lg px-8">继续购物</Link></div>
+          <div className="flex flex-col sm:flex-row justify-center gap-3 mt-8"><Link to={`/my/orders/${order.id}`} className="btn-primary btn-lg px-8">查看订单</Link><Link to="/" className="btn-outline btn-lg px-8">继续购物</Link></div>
         </div>
       )}
       <AddressModal addr={editing} onClose={() => setEditing(null)} onSave={a => { upsertAddress(a); setAddrId(a.id); setEditing(null); toast('地址已保存') }} />

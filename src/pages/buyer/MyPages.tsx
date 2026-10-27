@@ -18,7 +18,7 @@ export function Favorites() {
     <div className="card">
       <div className="px-5"><Tabs items={[{ key: 'all', label: `全部宝贝(${favorites.length})` }, { key: 'drop', label: '降价' }, { key: 'coupon', label: '有优惠' }]} value={tab} onChange={setTab} size="lg" /></div>
       {list.length === 0 ? <Empty text="还没有收藏的宝贝" icon={<Heart className="w-6 h-6" />} /> : (
-        <div className="p-5 grid grid-cols-5 gap-3">
+        <div className="p-3 md:p-5 grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-3">
           {list.map(p => (
             <div key={p.id} className="group relative">
               <ProductCard p={p} />
@@ -41,7 +41,7 @@ export function Footprints() {
       <div className="font-semibold text-lg mb-4 flex items-center gap-2"><Clock className="w-5 h-5 text-brand-500" />我的足迹</div>
       {groups.length === 0 && <Empty text="暂无浏览记录" />}
       {groups.map(([d, fs]) => (
-        <div key={d} className="mb-6"><div className="text-sm text-ink-500 mb-3">{d === fmtDate(new Date().toISOString(), false) ? '今天' : d}</div><div className="grid grid-cols-5 gap-3">{fs.map(f => products.find(p => p.id === f.productId)).filter(Boolean).map(p => <ProductCard key={p!.id} p={p!} />)}</div></div>
+        <div key={d} className="mb-6"><div className="text-sm text-ink-500 mb-3">{d === fmtDate(new Date().toISOString(), false) ? '今天' : d}</div><div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-3">{fs.map(f => products.find(p => p.id === f.productId)).filter(Boolean).map(p => <ProductCard key={p!.id} p={p!} />)}</div></div>
       ))}
     </div>
   )
@@ -59,7 +59,7 @@ export function Shops() {
       {list.length === 0 && <Empty text="暂无店铺" />}
       <div className="space-y-3">
         {list.map(s => (
-          <div key={s.id} className="flex items-center gap-4 border border-ink-100 rounded-xl p-4">
+          <div key={s.id} className="flex items-center gap-3 md:gap-4 border border-ink-100 rounded-xl p-3 md:p-4 flex-wrap">
             <Avatar src={s.logo} name={s.name} size={56} />
             <div className="w-56"><Link to={`/shop/${s.id}`} className="font-semibold hover:text-brand-500">{s.name}</Link><div className="text-xs text-ink-500 mt-1">粉丝 {compact(s.fans)} · {s.type === 'tmall' ? '天猫' : 'Plam'}</div></div>
             <div className="flex-1 flex gap-2">{products.filter(p => p.shopId === s.id).slice(0, 4).map(p => <Link key={p.id} to={`/item/${p.id}`} className="w-16 h-16 rounded-lg overflow-hidden"><Img src={p.images[0]} alt={p.title} w={64} h={64} className="w-full h-full" /></Link>)}</div>
@@ -89,7 +89,7 @@ export function Coupons() {
   return (
     <div className="card">
       <div className="px-5"><Tabs items={[{ key: 'mine', label: '我的优惠券', count: mine.filter(m => !m.used).length }, { key: 'center', label: '领券中心' }, { key: 'used', label: '已使用/过期' }]} value={tab} onChange={setTab} size="lg" /></div>
-      <div className="p-5 grid grid-cols-2 gap-3">
+      <div className="p-4 md:p-5 grid grid-cols-1 md:grid-cols-2 gap-3">
         {tab === 'mine' && mine.filter(m => !m.used && m.c.status === 'active').map(m => <Card key={m.couponId} c={m.c} action={<Link to={m.c.shopId ? `/shop/${m.c.shopId}` : '/'} className="btn-primary btn-sm">去使用</Link>} />)}
         {tab === 'center' && center.map(c => <Card key={c.id} c={c} action={<button onClick={() => { claimCoupon(c.id); toast('领取成功') }} className="btn-primary btn-sm">立即领取</button>} />)}
         {tab === 'used' && mine.filter(m => m.used || m.c.status !== 'active').map(m => <Card key={m.couponId} c={m.c} used />)}
@@ -194,8 +194,8 @@ export function Messages() {
   const shop = shops.find(s => s.id === cur)!
   const system = [{ t: '交易物流', d: '您的订单已签收，期待您的评价', time: '10:24' }, { t: '活动消息', d: '双11开门红：叠券低至7.2折起，速来抢购', time: '昨天' }, { t: '系统通知', d: '支付系统将于 10月30日 凌晨升级', time: '2天前' }]
   return (
-    <div className="card grid grid-cols-[260px_1fr] h-[600px] overflow-hidden">
-      <div className="border-r border-ink-100 overflow-auto">
+    <div className="card grid grid-cols-[260px_1fr] max-md:!grid-cols-1 h-[600px] overflow-hidden">
+      <div className="border-r border-ink-100 overflow-auto max-md:max-h-40 max-md:border-r-0 max-md:border-b">
         <div className="px-4 py-3 font-semibold flex items-center gap-2"><MessageSquare className="w-4 h-4 text-brand-500" />消息中心</div>
         {system.map(s => <div key={s.t} className="px-4 py-3 hover:bg-ink-50 cursor-pointer border-b border-ink-50"><div className="flex items-center justify-between text-sm"><span className="font-medium">{s.t}</span><span className="text-xs text-ink-400">{s.time}</span></div><div className="text-xs text-ink-500 line-clamp-1 mt-0.5">{s.d}</div></div>)}
         <div className="px-4 py-2 text-xs text-ink-400">店铺会话</div>

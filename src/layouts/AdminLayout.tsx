@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Users, Store, Package, FolderTree, FileText, RotateCcw, Star, Image, Ticket, Flag, Megaphone, CreditCard, Landmark, PieChart, ShieldCheck, ScrollText, Settings, Bell, Search, ChevronDown, LogOut, ChevronLeft, ArrowLeftRight } from 'lucide-react'
+import { LayoutDashboard, Users, Store, Package, FolderTree, FileText, RotateCcw, Star, Image, Ticket, Flag, Megaphone, CreditCard, Landmark, PieChart, ShieldCheck, ScrollText, Settings, Bell, Search, ChevronDown, LogOut, ChevronLeft, ArrowLeftRight, Menu, X } from 'lucide-react'
 import { useCurrentUser } from '@/lib/hooks'
 import { useDB } from '@/store/db'
 import { useSession } from '@/store/session'
@@ -24,13 +24,16 @@ export default function AdminLayout() {
   const logout = useSession(s => s.logout)
   const { products, shops, refunds, settings } = useDB()
   const [collapsed, setCollapsed] = useState(false)
+  const [drawer, setDrawer] = useState(false)
+  useEffect(() => { setDrawer(false) }, [loc.pathname])
   const todo = products.filter(p => p.status === 'pending').length + shops.filter(s => s.status === 'pending').length + refunds.filter(r => r.status === 'pending').length
   const current = ADMIN_MENU.flatMap(g => g.items).find(i => i.to === loc.pathname)
   useEffect(() => { document.title = `${current?.label ?? '后台'} · ${settings.siteName} 超级管理后台` }, [current, settings.siteName])
   return (
     <div className="min-h-screen bg-[#f3f4f7] flex">
-      <aside className={cls('bg-[#0f172a] text-slate-300 flex flex-col sticky top-0 h-screen transition-all', collapsed ? 'w-16' : 'w-[232px]')}>
-        <Link to="/admin" className="h-16 flex items-center gap-2.5 px-4 border-b border-white/5"><span className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-black text-lg shrink-0">P</span>{!collapsed && <div><div className="text-white font-semibold leading-tight">Plam 超级管理后台</div><div className="text-[10px] text-slate-400">Super Admin Console</div></div>}</Link>
+      {drawer && <div className="fixed inset-0 z-50 bg-ink-900/40 lg:hidden" onClick={() => setDrawer(false)} />}
+      <aside className={cls('bg-[#0f172a] text-slate-300 flex flex-col transition-all max-lg:fixed max-lg:inset-y-0 max-lg:left-0 max-lg:z-50 max-lg:w-[240px] lg:sticky lg:top-0 lg:h-screen', collapsed ? 'lg:w-16' : 'lg:w-[232px]', drawer ? '' : 'max-lg:-translate-x-full')}>
+        <Link to="/admin" className="h-16 flex items-center gap-2.5 px-4 border-b border-white/5 relative"><button aria-label="关闭菜单" onClick={e => { e.preventDefault(); setDrawer(false) }} className="lg:hidden absolute right-3 top-5 text-slate-400"><X className="w-5 h-5" /></button><span className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-black text-lg shrink-0">P</span>{!collapsed && <div><div className="text-white font-semibold leading-tight">Plam 超级管理后台</div><div className="text-[10px] text-slate-400">Super Admin Console</div></div>}</Link>
         <nav className="flex-1 overflow-auto py-3 no-scrollbar">
           {ADMIN_MENU.map(g => (
             <div key={g.title} className="mb-2">
@@ -39,23 +42,24 @@ export default function AdminLayout() {
             </div>
           ))}
         </nav>
-        <button onClick={() => setCollapsed(c => !c)} className="h-12 flex items-center justify-center border-t border-white/5 hover:bg-white/5" aria-label="折叠菜单"><ChevronLeft className={cls('w-4 h-4 transition', collapsed && 'rotate-180')} /></button>
+        <button onClick={() => setCollapsed(c => !c)} className="h-12 hidden lg:flex items-center justify-center border-t border-white/5 hover:bg-white/5" aria-label="折叠菜单"><ChevronLeft className={cls('w-4 h-4 transition', collapsed && 'rotate-180')} /></button>
       </aside>
       <div className="flex-1 min-w-0 flex flex-col">
-        <header className="h-16 bg-white border-b border-ink-200 flex items-center px-6 gap-4 sticky top-0 z-40">
-          <div className="text-sm text-ink-500">后台 <span className="mx-1">/</span> <span className="text-ink-900 font-medium">{current?.label ?? ''}</span></div>
-          <div className="relative w-72 ml-6"><Search className="w-4 h-4 text-ink-400 absolute left-3 top-1/2 -translate-y-1/2" /><input aria-label="全局搜索" className="input pl-9 bg-ink-50 border-transparent" placeholder="搜索订单号 / 用户 / 商品…" onKeyDown={e => { if (e.key === 'Enter') nav(`/admin/orders?q=${encodeURIComponent((e.target as HTMLInputElement).value)}`) }} /></div>
+        <header className="h-14 md:h-16 bg-white border-b border-ink-200 flex items-center px-3 md:px-6 gap-2 md:gap-4 sticky top-0 z-40">
+          <button aria-label="菜单" onClick={() => setDrawer(true)} className="lg:hidden p-2 rounded-lg hover:bg-ink-50 text-ink-700"><Menu className="w-5 h-5" /></button>
+          <div className="text-sm text-ink-500 whitespace-nowrap">后台 <span className="mx-1">/</span> <span className="text-ink-900 font-medium">{current?.label ?? ''}</span></div>
+          <div className="relative w-72 ml-6 hidden md:block"><Search className="w-4 h-4 text-ink-400 absolute left-3 top-1/2 -translate-y-1/2" /><input aria-label="全局搜索" className="input pl-9 bg-ink-50 border-transparent" placeholder="搜索订单号 / 用户 / 商品…" onKeyDown={e => { if (e.key === 'Enter') nav(`/admin/orders?q=${encodeURIComponent((e.target as HTMLInputElement).value)}`) }} /></div>
           <div className="ml-auto flex items-center gap-2">
             {settings.maintenance && <span className="tag-red">维护模式</span>}
-            <Link to="/" className="btn-ghost btn-sm"><ArrowLeftRight className="w-3.5 h-3.5" />前台</Link>
+            <Link to="/" className="btn-ghost btn-sm hidden sm:inline-flex"><ArrowLeftRight className="w-3.5 h-3.5" />前台</Link>
             <Link to="/admin/products" className="relative p-2 rounded-lg hover:bg-ink-50 text-ink-600" aria-label="待办"><Bell className="w-5 h-5" /><Badge n={todo} className="absolute -top-0.5 -right-0.5" /></Link>
             <div className="relative group">
-              <button className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-lg hover:bg-ink-50"><Avatar src={user?.avatar} name={user?.nickname ?? ''} size={32} /><span className="text-sm font-medium">{user?.nickname}</span><ChevronDown className="w-4 h-4 text-ink-400" /></button>
+              <button className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-lg hover:bg-ink-50"><Avatar src={user?.avatar} name={user?.nickname ?? ''} size={32} /><span className="text-sm font-medium hidden sm:inline">{user?.nickname}</span><ChevronDown className="w-4 h-4 text-ink-400" /></button>
               <div className="absolute right-0 top-full pt-1 hidden group-hover:block z-50"><div className="bg-white shadow-float rounded-lg py-1 w-36 text-sm"><Link to="/admin/settings" className="block px-3 py-2 hover:bg-ink-50">系统设置</Link><button onClick={() => { logout(); nav('/login') }} className="flex items-center gap-1 w-full text-left px-3 py-2 hover:bg-ink-50 text-ink-500"><LogOut className="w-3.5 h-3.5" />退出登录</button></div></div>
             </div>
           </div>
         </header>
-        <main className="flex-1 p-6 min-w-0"><Outlet /></main>
+        <main className="flex-1 p-3 md:p-6 min-w-0"><Outlet /></main>
       </div>
     </div>
   )
