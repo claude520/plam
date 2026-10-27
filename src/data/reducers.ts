@@ -1,7 +1,7 @@
 // 纯函数数据变更层：前端（zustand）与 Cloudflare Worker（D1）共用同一份逻辑，保证两端计算结果一致。
 import type {
   Address, Announcement, Banner, Campaign, CartItem, Category, Coupon, Message, Order, OrderStatus,
-  PaymentProvider, Product, Refund, Review, Shop, User, AuditLog, AdminRole,
+  PaymentProvider, Product, Refund, Review, Shop, User, AuditLog, AdminRole, LiveRoom, LiveConfig,
 } from './types'
 
 export interface DataState {
@@ -9,11 +9,12 @@ export interface DataState {
   addresses: Address[]; cart: CartItem[]; coupons: Coupon[]; reviews: Review[]; refunds: Refund[]
   banners: Banner[]; announcements: Announcement[]; paymentProviders: PaymentProvider[]; campaigns: Campaign[]
   auditLogs: AuditLog[]; messages: Message[]; adminRoles: AdminRole[]
+  lives: LiveRoom[]; liveConfigs: LiveConfig[]
   favorites: string[]; footprints: { productId: string; time: string }[]; followedShops: string[]
   myCoupons: { couponId: string; used: boolean }[]
   settings: { siteName: string; slogan: string; commissionRate: number; freightDefault: number; autoConfirmDays: number; maintenance: boolean }
 }
-export const COLLECTIONS = ['users', 'shops', 'categories', 'products', 'orders', 'addresses', 'cart', 'coupons', 'reviews', 'refunds', 'banners', 'announcements', 'paymentProviders', 'campaigns', 'auditLogs', 'messages', 'adminRoles', 'favorites', 'footprints', 'followedShops', 'myCoupons', 'settings'] as const satisfies readonly (keyof DataState)[]
+export const COLLECTIONS = ['users', 'shops', 'categories', 'products', 'orders', 'addresses', 'cart', 'coupons', 'reviews', 'refunds', 'banners', 'announcements', 'paymentProviders', 'campaigns', 'auditLogs', 'messages', 'adminRoles', 'lives', 'liveConfigs', 'favorites', 'footprints', 'followedShops', 'myCoupons', 'settings'] as const satisfies readonly (keyof DataState)[]
 
 /** 每次变更由调用方生成的上下文（id / 时间），保证前后端结果一致 */
 export interface Ctx { id: string; now: string }
@@ -34,9 +35,9 @@ export const reducers = {
   toggleFollowShop: (s: DataState, shopId: string): P => ({ followedShops: s.followedShops.includes(shopId) ? s.followedShops.filter(x => x !== shopId) : [shopId, ...s.followedShops] }),
   claimCoupon: (s: DataState, couponId: string): P => s.myCoupons.some(x => x.couponId === couponId) ? {} : { myCoupons: [...s.myCoupons, { couponId, used: false }], coupons: s.coupons.map(x => x.id === couponId ? { ...x, used: x.used + 1 } : x) },
 
-  createOrder: (s: DataState, userId: string, items: Order['items'], shopId: string, address: Address, opts: { discount: number; freight: number; note?: string; couponId?: string }, c: Ctx): P => {
+  createOrder: (s: DataState, userId: string, items: Order['items'], shopId: string, address: Address, opts: { discount: number; freight: number; note?: string; couponId?: string; liveId?: string }, c: Ctx): P => {
     const total = round(items.reduce((a, it) => a + it.price * it.qty, 0))
-    const o: Order = { id: c.id, userId, shopId, items, total, freight: opts.freight, discount: opts.discount, payAmount: round(total + opts.freight - opts.discount), status: 'unpaid', createdAt: c.now, address, note: opts.note }
+    const o: Order = { id: c.id, userId, shopId, items, total, freight: opts.freight, discount: opts.discount, payAmount: round(total + opts.freight - opts.discount), status: 'unpaid', createdAt: c.now, address, note: opts.note, liveId: opts.liveId }
     return { orders: [o, ...s.orders], myCoupons: opts.couponId ? s.myCoupons.map(m => m.couponId === opts.couponId ? { ...m, used: true } : m) : s.myCoupons }
   },
   payOrder: (s: DataState, orderId: string, provider: string, c: Ctx): P => {
@@ -47,6 +48,7 @@ export const reducers = {
       orders: s.orders.map(x => x.id === orderId ? { ...x, status: 'paid' as OrderStatus, paidAt: c.now, payment: { provider, tradeNo: c.id } } : x),
       products: s.products.map(p => { const it = o.items.find(i => i.productId === p.id); if (!it) return p; const sku = it.skuText; return { ...p, sales: p.sales + it.qty, stock: Math.max(0, p.stock - it.qty), skus: p.skus.map(k => Object.values(k.attrs).join(' / ') === sku ? { ...k, stock: Math.max(0, k.stock - it.qty) } : k) } }),
       users,
+      ...(o.liveId && s.lives.some(l => l.id === o.liveId) ? { lives: s.lives.map(l => l.id === o.liveId ? { ...l, stats: { ...l.stats, orders: l.stats.orders + 1, gmv: round(l.stats.gmv + o.payAmount) }, keypoints: l.keypoints.map((k, i, arr) => i === arr.length - 1 && !k.end && o.items.some(it => it.productId === k.productId) ? { ...k, orders: k.orders + 1 } : k) } : l) } : {}),
     }
   },
   updateOrder: (s: DataState, orderId: string, patch: Partial<Order>): P => ({ orders: s.orders.map(x => x.id === orderId ? { ...x, ...patch } : x) }),
@@ -92,8 +94,24 @@ export const reducers = {
   markRead: (s: DataState, shopId: string, from: string): P => ({ messages: s.messages.map(m => m.shopId === shopId && m.from === from ? { ...m, read: true } : m) }),
   updateSettings: (s: DataState, patch: Partial<DataState['settings']>): P => ({ settings: { ...s.settings, ...patch } }),
   log: (s: DataState, actor: string, action: string, target: string, c: Ctx): P => ({ auditLogs: [{ id: c.id, actor, action, target, time: c.now, ip: '0.0.0.0' }, ...s.auditLogs].slice(0, 500) }),
+
+  // ---------------- 直播 ----------------
+  upsertLive: (s: DataState, l: LiveRoom): P => ({ lives: s.lives.some(x => x.id === l.id) ? s.lives.map(x => x.id === l.id ? l : x) : [l, ...s.lives] }),
+  removeLive: (s: DataState, id: string): P => ({ lives: s.lives.filter(l => l.id !== id) }),
+  updateLive: (s: DataState, id: string, patch: Partial<LiveRoom>): P => ({ lives: s.lives.map(l => l.id === id ? { ...l, ...patch } : l) }),
+  startLive: (s: DataState, id: string, c: Ctx): P => ({ lives: s.lives.map(l => l.id === id && l.status !== 'ended' ? { ...l, status: 'live', startedAt: c.now, stats: { ...l.stats, viewers: 0 } } : l) }),
+  endLive: (s: DataState, id: string, stats: Partial<LiveRoom['stats']>, c: Ctx): P => ({ lives: s.lives.map(l => l.id === id ? { ...l, status: 'ended', endedAt: c.now, explainingId: undefined, stats: { ...l.stats, ...stats, viewers: 0, duration: l.startedAt ? Math.max(1, Math.round((new Date(c.now).getTime() - new Date(l.startedAt).getTime()) / 60000)) : l.stats.duration }, keypoints: l.keypoints.map(k => k.end ? k : { ...k, end: c.now }) } : l) }),
+  setLiveExplain: (s: DataState, id: string, productId: string | null, c: Ctx): P => ({ lives: s.lives.map(l => {
+    if (l.id !== id) return l
+    const kps = l.keypoints.map(k => k.end ? k : { ...k, end: c.now })
+    return { ...l, explainingId: productId ?? undefined, keypoints: productId ? [...kps, { productId, start: c.now, clicks: 0, orders: 0 }] : kps }
+  }) }),
+  setLiveProducts: (s: DataState, id: string, productIds: string[], livePrices?: Record<string, number>): P => ({ lives: s.lives.map(l => l.id === id ? { ...l, productIds, livePrices: livePrices ?? l.livePrices } : l) }),
+  bumpLiveStats: (s: DataState, id: string, delta: Partial<LiveRoom['stats']>): P => ({ lives: s.lives.map(l => l.id === id ? { ...l, stats: Object.fromEntries(Object.entries(l.stats).map(([k, v]) => [k, k === 'viewers' ? ((delta as Record<string, number>)[k] ?? v) : k === 'peak' ? Math.max(v, (delta as Record<string, number>)[k] ?? v) : v + ((delta as Record<string, number>)[k] ?? 0)])) as LiveRoom['stats'] } : l) }),
+  upsertLiveConfig: (s: DataState, cfg: LiveConfig): P => ({ liveConfigs: s.liveConfigs.some(x => x.shopId === cfg.shopId) ? s.liveConfigs.map(x => x.shopId === cfg.shopId ? cfg : x) : [...s.liveConfigs, cfg] }),
+  followLive: (s: DataState, shopId: string, liveId: string): P => s.followedShops.includes(shopId) ? {} : ({ followedShops: [shopId, ...s.followedShops], shops: s.shops.map(x => x.id === shopId ? { ...x, fans: x.fans + 1 } : x), lives: s.lives.map(l => l.id === liveId ? { ...l, stats: { ...l.stats, newFans: l.stats.newFans + 1 } } : l) }),
 }
 export type Reducers = typeof reducers
 export type ReducerName = keyof Reducers
 /** 需要 Ctx（id/时间）作为末尾参数的 reducer */
-export const CTX_REDUCERS = new Set<ReducerName>(['addToCart', 'addFootprint', 'createOrder', 'payOrder', 'setOrderStatus', 'shipOrder', 'addReview', 'createRefund', 'registerUser', 'sendMessage', 'log'])
+export const CTX_REDUCERS = new Set<ReducerName>(['addToCart', 'addFootprint', 'createOrder', 'payOrder', 'setOrderStatus', 'shipOrder', 'addReview', 'createRefund', 'registerUser', 'sendMessage', 'log', 'startLive', 'endLive', 'setLiveExplain'])

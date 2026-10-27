@@ -43,3 +43,5 @@ export const REFUND_STATUS: Record<RefundStatus, { label: string; cls: string }>
 }
 export const PAY_NAMES: Record<string, string> = { wechat: '微信支付', alipay: '支付宝', unionpay: '银联云闪付', stripe: 'Stripe', paypal: 'PayPal', balance: '余额支付' }
 export const cls = (...a: (string | false | null | undefined)[]) => a.filter(Boolean).join(' ')
+/** 直播间展示用 9 位数字 ID（由字符串 id 稳定哈希） */
+export const liveNo = (id: string) => { let h = 7; for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0; return String(100000000 + (h % 900000000)) }

@@ -45,6 +45,7 @@ export function TopBar() {
         <nav className="flex items-center gap-5">
           <Link to="/" className="hover:text-brand-500">Plam 首页</Link>
           <Link to="/my/orders" className="hover:text-brand-500">已买到的宝贝</Link>
+          <Link to="/live" className="hover:text-brand-500 text-brand-600 font-medium">Plam直播</Link>
           <Link to="/my" className="hover:text-brand-500 flex items-center gap-0.5">我的 Plam<ChevronDown className="w-3 h-3" /></Link>
           <Link to="/cart" className="hover:text-brand-500 flex items-center gap-1 text-brand-600 font-medium"><ShoppingCart className="w-3.5 h-3.5" />购物车 {cartCount}</Link>
           <Link to="/my/favorites" className="hover:text-brand-500 flex items-center gap-0.5"><Heart className="w-3.5 h-3.5" />收藏夹<ChevronDown className="w-3 h-3" /></Link>
@@ -151,7 +152,7 @@ export function MobileNav() {
 export default function BuyerLayout() {
   const loc = useLocation()
   useEffect(() => { window.scrollTo(0, 0) }, [loc.pathname])
-  const isHome = loc.pathname === '/'
+  const isHome = loc.pathname === '/' || loc.pathname.startsWith('/live')
   return (
     <div className="min-h-full flex flex-col">
       <TopBar />

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Heart, MapPin, Minus, Plus, Share2, ShieldCheck, Truck, MessageCircle, Store, ChevronRight, Star } from 'lucide-react'
 import { useDB } from '@/store/db'
 import { useProduct, useShop, useCategoryName, useCurrentUser } from '@/lib/hooks'
@@ -11,6 +11,7 @@ import { toast } from '@/store/session'
 export default function Item() {
   const { id } = useParams()
   const nav = useNavigate()
+  const [sp] = useSearchParams()
   const p = useProduct(id)
   const shop = useShop(p?.shopId)
   const catName = useCategoryName(p?.categoryId)
@@ -23,7 +24,10 @@ export default function Item() {
   useEffect(() => { if (p) { addFootprint(p.id); setSel({}); setImg(0); setQty(1) } }, [p?.id]) // eslint-disable-line
   const sku = useMemo(() => p?.skus.find(s => p.attrs.every(a => s.attrs[a.name] === sel[a.name])), [p, sel])
   const allSelected = p ? p.attrs.every(a => sel[a.name]) : false
-  const price = sku?.price ?? p?.price ?? 0
+  const liveId = sp.get('live') ?? ''
+  const liveRoom = useDB(s => s.lives).find(l => l.id === liveId)
+  const livePrice = liveRoom && p ? liveRoom.livePrices[p.id] : undefined
+  const price = livePrice && livePrice < (sku?.price ?? p?.price ?? 0) ? livePrice : (sku?.price ?? p?.price ?? 0)
   const prodReviews = useMemo(() => reviews.filter(r => r.productId === p?.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt)), [reviews, p])
   const shopProducts = useMemo(() => products.filter(x => x.shopId === p?.shopId && x.id !== p?.id && x.status === 'on').slice(0, 6), [products, p])
   const similar = useMemo(() => products.filter(x => x.categoryId === p?.categoryId && x.id !== p?.id && x.status === 'on').slice(0, 5), [products, p])
@@ -32,7 +36,7 @@ export default function Item() {
   const fav = favorites.includes(p.id)
   const followed = followedShops.includes(shop.id)
   const ensureSku = () => { if (!allSelected) { toast('请选择完整的商品规格', 'error'); return false } if (!sku || sku.stock < qty) { toast('该规格库存不足', 'error'); return false } return true }
-  const buyNow = () => { if (!user) return nav('/login'); if (!ensureSku()) return; nav(`/checkout?pid=${p.id}&sku=${sku!.id}&qty=${qty}`) }
+  const buyNow = () => { if (!user) return nav('/login'); if (!ensureSku()) return; nav(`/checkout?pid=${p.id}&sku=${sku!.id}&qty=${qty}${liveId ? `&live=${liveId}` : ''}`) }
   const addCart = () => { if (!user) return nav('/login'); if (!ensureSku()) return; addToCart(p.id, sku!.id, qty); toast('已加入购物车') }
 
   return (
@@ -58,7 +62,7 @@ export default function Item() {
           <div className="mt-4 rounded-xl bg-gradient-to-r from-brand-50 to-amber-50 border border-brand-100 p-4">
             <div className="flex items-baseline gap-3">
               <span className="text-ink-500 text-sm w-14">促销价</span>
-              <span className="price text-sm">¥</span><span className="price text-3xl md:text-4xl">{money(price)}</span>
+              <span className="price text-sm">¥</span><span className="price text-3xl md:text-4xl">{money(price)}</span>{livePrice && liveRoom && <Link to={`/live/${liveRoom.id}`} className="ml-3 inline-flex items-center gap-1 rounded-md bg-brand-500 text-white text-xs px-2 py-1 align-middle">直播专享价 · 回到直播间</Link>}
               {p.originalPrice && <span className="text-ink-400 line-through text-sm font-num">¥{money(p.originalPrice)}</span>}
               {p.tags[0] && <span className="tag bg-brand-500 text-white ml-2">{p.tags[0]}</span>}
             </div>

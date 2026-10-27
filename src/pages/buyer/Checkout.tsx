@@ -32,7 +32,10 @@ export default function Checkout() {
   const freight = items.every(it => it.p.freeShipping) ? 0 : settings.freightDefault
   const usable = myCoupons.filter(m => !m.used).map(m => coupons.find(c => c.id === m.couponId)!).filter(c => c && c.status === 'active' && (!c.shopId || c.shopId === shop?.id) && total >= c.threshold)
   const coupon = coupons.find(c => c.id === couponId)
-  const discount = coupon ? (coupon.type === 'discount' ? Math.round(total * (1 - coupon.value) * 100) / 100 : coupon.value) : 0
+  const liveId = sp.get('live') ?? ''
+  const liveRoom = useDB(s => s.lives).find(l => l.id === liveId)
+  const liveOff = liveRoom ? items.reduce((a, it) => { const lp = liveRoom.livePrices[it.p.id]; return a + (lp && lp < it.sku.price ? (it.sku.price - lp) * it.qty : 0) }, 0) : 0
+  const discount = Math.round(((coupon ? (coupon.type === 'discount' ? Math.round(total * (1 - coupon.value) * 100) / 100 : coupon.value) : 0) + liveOff) * 100) / 100
   const pay = Math.max(0, Math.round((total + freight - discount) * 100) / 100)
   if (!user) { nav('/login'); return null }
   if (items.length === 0 || !shop) return <div className="container-x py-20 text-center text-ink-500">没有待结算的商品 <Link className="link ml-2" to="/cart">返回购物车</Link></div>
@@ -40,7 +43,7 @@ export default function Checkout() {
 
   const submit = () => {
     if (!addr) return toast('请先添加收货地址', 'error')
-    const o = createOrder(user.id, items.map(it => ({ productId: it.p.id, title: it.p.title, image: it.p.images[0], skuText: Object.values(it.sku.attrs).join(' / '), price: it.sku.price, qty: it.qty })), shop.id, addr, { discount, freight, note, couponId: couponId || undefined })
+    const o = createOrder(user.id, items.map(it => ({ productId: it.p.id, title: it.p.title, image: it.p.images[0], skuText: Object.values(it.sku.attrs).join(' / '), price: it.sku.price, qty: it.qty })), shop.id, addr, { discount, freight, note, couponId: couponId || undefined, liveId: liveRoom?.id })
     if (items[0].cartId) removeCart(items.map(it => it.cartId))
     setOrder(o); setStep(1); window.scrollTo(0, 0)
   }

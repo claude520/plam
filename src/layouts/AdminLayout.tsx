@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Users, Store, Package, FolderTree, FileText, RotateCcw, Star, Image, Ticket, Flag, Megaphone, CreditCard, Landmark, PieChart, ShieldCheck, ScrollText, Settings, Bell, Search, ChevronDown, LogOut, ChevronLeft, ArrowLeftRight, Menu, X } from 'lucide-react'
+import { LayoutDashboard, Users, Store, Package, FolderTree, FileText, RotateCcw, Star, Image, Ticket, Flag, Megaphone, CreditCard, Landmark, PieChart, ShieldCheck, ScrollText, Settings, Bell, Search, ChevronDown, LogOut, ChevronLeft, ArrowLeftRight, Menu, X, Radio } from 'lucide-react'
 import { useCurrentUser } from '@/lib/hooks'
 import { useDB } from '@/store/db'
 import { useSession } from '@/store/session'
@@ -11,7 +11,7 @@ export const ADMIN_MENU = [
   { title: '概览', items: [{ label: '数据看板', to: '/admin', icon: <LayoutDashboard className="w-4 h-4" /> }] },
   { title: '用户与商家', items: [{ label: '用户管理', to: '/admin/users', icon: <Users className="w-4 h-4" /> }, { label: '商家管理', to: '/admin/shops', icon: <Store className="w-4 h-4" /> }] },
   { title: '商品', items: [{ label: '商品审核', to: '/admin/products', icon: <Package className="w-4 h-4" /> }, { label: '类目管理', to: '/admin/categories', icon: <FolderTree className="w-4 h-4" /> }] },
-  { title: '交易', items: [{ label: '订单管理', to: '/admin/orders', icon: <FileText className="w-4 h-4" /> }, { label: '退款纠纷', to: '/admin/refunds', icon: <RotateCcw className="w-4 h-4" /> }, { label: '评价管理', to: '/admin/reviews', icon: <Star className="w-4 h-4" /> }] },
+  { title: '交易', items: [{ label: '订单管理', to: '/admin/orders', icon: <FileText className="w-4 h-4" /> }, { label: '退款纠纷', to: '/admin/refunds', icon: <RotateCcw className="w-4 h-4" /> }, { label: '评价管理', to: '/admin/reviews', icon: <Star className="w-4 h-4" /> }, { label: '直播管理', to: '/admin/lives', icon: <Radio className="w-4 h-4" /> }] },
   { title: '营销与内容', items: [{ label: '首页轮播', to: '/admin/banners', icon: <Image className="w-4 h-4" /> }, { label: '优惠券', to: '/admin/coupons', icon: <Ticket className="w-4 h-4" /> }, { label: '营销活动', to: '/admin/campaigns', icon: <Flag className="w-4 h-4" /> }, { label: '公告管理', to: '/admin/announcements', icon: <Megaphone className="w-4 h-4" /> }] },
   { title: '财务', items: [{ label: '支付渠道', to: '/admin/payments', icon: <CreditCard className="w-4 h-4" /> }, { label: '商家结算', to: '/admin/settlements', icon: <Landmark className="w-4 h-4" /> }, { label: '财务报表', to: '/admin/reports', icon: <PieChart className="w-4 h-4" /> }] },
   { title: '系统', items: [{ label: '角色权限', to: '/admin/roles', icon: <ShieldCheck className="w-4 h-4" /> }, { label: '操作日志', to: '/admin/logs', icon: <ScrollText className="w-4 h-4" /> }, { label: '系统设置', to: '/admin/settings', icon: <Settings className="w-4 h-4" /> }] },

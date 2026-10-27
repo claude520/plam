@@ -1,7 +1,6 @@
 import type {
   AdminRole, Address, Announcement, AuditLog, Banner, Campaign, Category, Coupon, Message,
-  Order, PaymentProvider, Product, Refund, Review, Shop, User,
-} from './types'
+  Order, PaymentProvider, Product, Refund, Review, Shop, User, LiveRoom, LiveConfig } from './types'
 
 // ---------- helpers ----------
 let seedN = 20261028
@@ -244,7 +243,43 @@ export function buildSeed() {
   ]
 
 
-  return { categories, shops, users, products, addresses, orders, refunds, reviews, coupons, banners, announcements, paymentProviders, campaigns, auditLogs, messages, adminRoles }
+  // ---------- 直播 ----------
+  const liveTitles = ['上新，直接不赚啦～', '正在直播中', '双十一大漏，1折起', '上新', '欢迎光临省钱地标！', '捡漏了', '厂长不在 随便乱卖', '双十一珍珠全场1折送', '新品首发 直播间专享价', '清仓大处理中']
+  const lives: LiveRoom[] = []
+  const mkStats = (live: boolean): LiveRoom['stats'] => ({ viewers: live ? rint(300, 48000) : 0, views: rint(2000, 480000), peak: rint(800, 60000), likes: rint(5000, 900000), comments: rint(200, 30000), orders: rint(20, 2600), gmv: Math.round(rint(2000, 980000)), newFans: rint(10, 5000), clicks: rint(500, 90000), duration: rint(60, 420) })
+  shops.slice(0, 11).forEach((sh, i) => {
+    const ps = products.filter(p => p.shopId === sh.id && p.status === 'on').slice(0, 6)
+    if (!ps.length) return
+    const livePrices: Record<string, number> = {}
+    ps.forEach(p => { livePrices[p.id] = Math.round(p.price * (0.7 + rnd() * 0.2) * 10) / 10 })
+    lives.push({
+      id: `lv-${sh.id}-1`, shopId: sh.id, hostId: sh.ownerId, title: liveTitles[i % liveTitles.length], cover: ps[0].images[0], categoryId: ps[0].categoryId.split('-')[0],
+      status: i < 8 ? 'live' : 'scheduled', type: 'vertical', visibility: 'all', plannedAt: i < 8 ? daysAgo(0) : new Date(Date.now() + (i - 7) * 3.6e6 * 5).toISOString(), startedAt: i < 8 ? new Date(Date.now() - rint(20, 240) * 60000).toISOString() : undefined,
+      trailer: true, showLocation: false, demo: true, productIds: ps.map(p => p.id), explainingId: i < 8 ? ps[rint(0, ps.length - 1)].id : undefined,
+      notice: pick(['关注主播不迷路，整点抽免单', '直播间专享价，拍下立减', '新粉关注领 5 元无门槛券']), livePrices, stats: mkStats(i < 8), keypoints: [],
+    })
+  })
+  // seller12 自己的历史场次 + 预告
+  const mine = products.filter(p => p.shopId === 's12' && p.status === 'on').slice(0, 8)
+  ;[3, 7, 12].forEach((d, i) => {
+    const st = new Date(Date.now() - d * 864e5 - 2 * 3.6e6)
+    const dur = rint(45, 180)
+    const stats = mkStats(false); stats.views = rint(300, 4000); stats.peak = rint(40, 600); stats.likes = rint(200, 9000); stats.comments = rint(30, 900); stats.orders = rint(3, 60); stats.gmv = rint(300, 26000); stats.newFans = rint(2, 300); stats.clicks = rint(80, 3000); stats.duration = dur
+    lives.push({ id: `lv-s12-h${i + 1}`, shopId: 's12', hostId: 'u-seller-12', title: ['周末福利专场', '新品试色', '清仓捡漏'][i], cover: mine[i]?.images[0] ?? img('live-s12'), categoryId: mine[0]?.categoryId.split('-')[0], status: 'ended', type: 'vertical', visibility: 'all', plannedAt: st.toISOString(), startedAt: st.toISOString(), endedAt: new Date(st.getTime() + dur * 60000).toISOString(), trailer: true, showLocation: false, productIds: mine.slice(0, 5).map(p => p.id), livePrices: {}, stats, keypoints: mine.slice(0, 3).map((p, j) => ({ productId: p.id, start: new Date(st.getTime() + j * 15 * 60000).toISOString(), end: new Date(st.getTime() + (j * 15 + 12) * 60000).toISOString(), clicks: rint(10, 400), orders: rint(0, 12) })) })
+  })
+  lives.push({ id: 'lv-s12-next', shopId: 's12', hostId: 'u-seller-12', title: '双11 预售开抢', cover: mine[3]?.images[0] ?? img('live-s12-next'), categoryId: mine[0]?.categoryId.split('-')[0], status: 'scheduled', type: 'vertical', visibility: 'all', plannedAt: new Date(Date.now() + 26 * 3.6e6).toISOString(), trailer: true, showLocation: false, productIds: mine.slice(0, 6).map(p => p.id), livePrices: {}, stats: mkStats(false), keypoints: [] })
+  lives.forEach(l => { if (l.status === 'scheduled') l.stats = { ...l.stats, viewers: 0, views: 0, peak: 0, likes: 0, comments: 0, orders: 0, gmv: 0, newFans: 0, clicks: 0, duration: 0 } })
+  const liveConfigs: LiveConfig[] = shops.map(sh => ({
+    shopId: sh.id, nickname: sh.name.replace(/旗舰店|官方|专营店/g, '') + '直播间', intro: `欢迎来到${sh.name}直播间，关注主播不迷路，整点有福利～`,
+    hideNames: true, aiReply: false, aiCard: true, strategy: true,
+    autoReplies: [{ q: '怎么发货', a: '拍下 48 小时内发货，顺丰/中通包邮～' }, { q: '尺码', a: '宝贝详情页有尺码表，不确定可以留言身高体重哦' }, { q: '优惠', a: '直播间专享价已经是最低啦，关注领券再减 5 元' }],
+    quickReplies: ['欢迎宝宝们来到直播间～', '关注主播不迷路', '这款直播间专享价，拍下立减', '稍等，马上讲解这款'],
+    blockWords: ['广告', '加微信', '刷单'], mutedUsers: [],
+    channels: { search: true, feed: true, shop: true, detail: true, outside: false },
+    goods: { showPrice: true, showSales: true, autoPush: false, pushInterval: 5 }, gift: false, publicScreenAI: false, fps: 1, quality: 'mid',
+  }))
+
+  return { categories, shops, users, products, addresses, orders, refunds, reviews, coupons, banners, announcements, paymentProviders, campaigns, auditLogs, messages, adminRoles, lives, liveConfigs }
 }
 
 export const PERMISSIONS = [

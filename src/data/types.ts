@@ -106,6 +106,8 @@ export interface Order {
   payment?: { provider: string; tradeNo: string }
   logistics?: { company: string; no: string; traces: { time: string; text: string }[] }
   note?: string
+  /** 来源直播间 */
+  liveId?: string
 }
 
 export interface Address {
@@ -235,4 +237,56 @@ export interface AdminRole {
   name: string
   permissions: string[]
   members: number
+}
+
+// ---------------- 直播 ----------------
+export type LiveStatus = 'scheduled' | 'live' | 'ended'
+
+export interface LiveRoom {
+  id: string
+  shopId: string
+  hostId: string
+  title: string
+  cover: string
+  covers?: string[]
+  categoryId?: string
+  status: LiveStatus
+  type: 'vertical' | 'horizontal'
+  visibility: 'all' | 'private' | 'trial'
+  plannedAt: string
+  startedAt?: string
+  endedAt?: string
+  trailer: boolean
+  showLocation: boolean
+  demo?: boolean
+  productIds: string[]
+  /** 讲解中的商品 */
+  explainingId?: string
+  /** 置顶/公告 */
+  notice?: string
+  /** 直播间专享价：productId -> price */
+  livePrices: Record<string, number>
+  stats: { viewers: number; views: number; peak: number; likes: number; comments: number; orders: number; gmv: number; newFans: number; clicks: number; duration: number }
+  /** 讲解记录 */
+  keypoints: { productId: string; start: string; end?: string; clicks: number; orders: number }[]
+}
+
+export interface LiveConfig {
+  shopId: string
+  nickname: string
+  intro: string
+  hideNames: boolean
+  aiReply: boolean
+  aiCard: boolean
+  strategy: boolean
+  autoReplies: { q: string; a: string }[]
+  quickReplies: string[]
+  blockWords: string[]
+  mutedUsers: string[]
+  channels: { search: boolean; feed: boolean; shop: boolean; detail: boolean; outside: boolean }
+  goods: { showPrice: boolean; showSales: boolean; autoPush: boolean; pushInterval: number }
+  gift: boolean
+  publicScreenAI: boolean
+  fps: 1 | 2
+  quality: 'low' | 'mid' | 'high'
 }

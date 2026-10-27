@@ -95,7 +95,7 @@ export default function Home() {
           </div>
         </div>
         <div className="container-x pb-3 flex items-center gap-5 md:gap-8 overflow-x-auto no-scrollbar whitespace-nowrap">
-          <Channel icon={<Tv className="w-3.5 h-3.5" />} label="Plam 直播" to="/search?q=直播" color="bg-brand-500" />
+          <Channel icon={<Tv className="w-3.5 h-3.5" />} label="Plam 直播" to="/live" color="bg-brand-500" />
           <Channel icon={<Store className="w-3.5 h-3.5" />} label="企业采购" to="/search?q=采购" color="bg-qn-500" />
           <Channel icon={<Zap className="w-3.5 h-3.5" />} label="司法拍卖" to="/search?q=拍卖" color="bg-rose-500" />
           <Channel icon={<ShoppingBag className="w-3.5 h-3.5" />} label="Plam 超市" to="/search?q=超市" color="bg-red-500" />
@@ -167,7 +167,7 @@ export default function Home() {
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               <Promo title="领券中心" tag="双11" items={pick([8, 12])} to="/my/coupons" color="bg-brand-500" />
-              <Promo title="Plam 直播" tag="双11" items={pick([14, 20])} to="/search?q=直播" color="bg-rose-600" />
+              <Promo title="Plam 直播" tag="直播中" items={pick([14, 20])} to="/live" color="bg-rose-600" />
               <Promo title="国家补贴" tag="双11" items={pick([0, 1])} to="/search?q=国补" color="bg-emerald-700" />
               <Promo title="限时秒杀" tag="20:00" items={pick([30, 31])} to="/search?q=秒杀" color="bg-amber-700" />
             </div>
