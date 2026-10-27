@@ -13,7 +13,7 @@ function Countdown() {
   useEffect(() => { const i = setInterval(() => setT(x => (x > 0 ? x - 1 : 0)), 1000); return () => clearInterval(i) }, [])
   const h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), s = t % 60
   const B = ({ v }: { v: number }) => <span className="inline-block bg-ink-900 text-white rounded px-1 font-num min-w-[24px] text-center">{String(v).padStart(2, '0')}</span>
-  return <span className="text-sm text-white font-medium flex items-center gap-1">最后2天倒计时 <B v={h} /> 时 <B v={m} /> 分 <B v={s} /> 秒</span>
+  return <span className="text-sm text-white font-medium hidden lg:flex items-center gap-1">最后2天倒计时 <B v={h} /> 时 <B v={m} /> 分 <B v={s} /> 秒</span>
 }
 
 export default function Home() {
