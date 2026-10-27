@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html, body, #root { height: 100%; }
+body {
+  @apply bg-ink-50 text-ink-800 font-sans antialiased text-[14px] leading-normal;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration: none; }
+button { font: inherit; }
+input, select, textarea { font: inherit; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #d0d5dd; border-radius: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+@layer components {
+  .container-x { @apply mx-auto w-full max-w-[1300px] px-4; }
+  .card { @apply bg-white rounded-xl2 shadow-card; }
+  .btn { @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-4 h-9 text-sm font-medium transition-all select-none whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed; }
+  .btn-primary { @apply btn bg-brand-500 text-white hover:bg-brand-600 active:bg-brand-700 shadow-sm; }
+  .btn-qn { @apply btn bg-qn-500 text-white hover:bg-qn-600 active:bg-qn-700 shadow-sm; }
+  .btn-outline { @apply btn border border-ink-300 bg-white text-ink-700 hover:border-brand-500 hover:text-brand-600; }
+  .btn-ghost { @apply btn text-ink-600 hover:bg-ink-100; }
+  .btn-sm { @apply h-7 px-3 text-xs rounded-md; }
+  .btn-lg { @apply h-11 px-6 text-base rounded-xl; }
+  .input { @apply w-full h-9 rounded-lg border border-ink-300 bg-white px-3 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100 placeholder:text-ink-400; }
+  .input-qn { @apply input focus:border-qn-500 focus:ring-qn-100; }
+  .tag { @apply inline-flex items-center rounded px-1.5 h-[18px] text-[11px] leading-none font-medium; }
+  .tag-red { @apply tag bg-brand-50 text-brand-600 border border-brand-200; }
+  .tag-blue { @apply tag bg-qn-50 text-qn-600 border border-qn-200; }
+  .tag-green { @apply tag bg-emerald-50 text-emerald-600 border border-emerald-200; }
+  .tag-gray { @apply tag bg-ink-100 text-ink-600; }
+  .tag-gold { @apply tag bg-amber-50 text-amber-700 border border-amber-200; }
+  .price { @apply font-num font-semibold text-brand-500; }
+  .link { @apply text-qn-600 hover:underline cursor-pointer; }
+  .skeleton { @apply bg-ink-100 animate-pulse rounded; }
+  .divider { @apply border-t border-ink-100; }
+}
+
+.line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
