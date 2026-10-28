@@ -62,7 +62,7 @@ export function SellerOrders() {
               <Sel label="预售状态" k="pay" options={[]} /><Sel label="售后服务" k="pay" options={[]} /><Sel label="承诺发货时间" k="pay" options={[]} />
               <Inp label="宝贝名称" k="title" /><Sel label="催发货订单" k="pay" options={[]} /><div className="col-span-2"><DateRange label="创建时间" /></div>
               <div className="col-span-2"><DateRange label="付款时间" /></div><Sel label="评价状态" k="pay" options={[]} /><Sel label="物流服务" k="pay" options={[]} />
-              <Sel label="支付方式" k="pay" options={[['wechat', '微信支付'], ['alipay', '支付宝'], ['unionpay', '银联'], ['stripe', 'Stripe'], ['balance', '余额']]} /><Sel label="订单类型" k="pay" options={[]} /><Sel label="代充类型" k="pay" options={[]} /><Inp label="收件人姓名" k="name" />
+              <Sel label="支付方式" k="pay" options={[['balance', '余额'], ['applepay', 'Apple Pay'], ['googlepay', 'Google Pay'], ['payos', 'PayOS']]} /><Sel label="订单类型" k="pay" options={[]} /><Sel label="代充类型" k="pay" options={[]} /><Inp label="收件人姓名" k="name" />
               <Inp label="收件人手机号" k="phone" /><Inp label="收礼人昵称" k="title" placeholder="仅对礼物订单生效" /><div className="col-span-2"><DateRange label="确认收货时间" /></div>
               <Sel label="预警提示" k="pay" options={[]} />
             </div>

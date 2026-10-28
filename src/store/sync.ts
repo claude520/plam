@@ -35,6 +35,8 @@ async function poll() {
 }
 
 export const sync = {
+  /** 立即从服务端拉取最新数据（例如服务端确认支付后） */
+  refresh: () => pull(),
   attach(s: Store) {
     store = s
     if (typeof window === 'undefined') return

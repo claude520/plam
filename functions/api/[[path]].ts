@@ -11,8 +11,9 @@
 // POST /api/translate { to, texts }                       多语言翻译（Workers AI + D1 缓存）
 import { reducers, COLLECTIONS, type DataState, type ReducerName } from '../../src/data/reducers'
 import { initialState } from '../../src/data/initial'
+import { payApi, type PayEnv } from '../../src/server/pay'
 
-interface Env { DB: D1Database; AI?: { run: (model: string, input: Record<string, unknown>) => Promise<{ translated_text?: string; response?: unknown }> } }
+interface Env extends Omit<PayEnv, 'DB'> { DB: D1Database; AI?: { run: (model: string, input: Record<string, unknown>) => Promise<{ translated_text?: string; response?: unknown }> } }
 
 // ---------- 多语言翻译（大模型 + 电商术语表，批量 JSON 输出） ----------
 const LANG_NAME: Record<string, string> = { en: 'English', vi: 'Vietnamese', fr: 'French', ko: 'Korean', ja: 'Japanese', ms: 'Malaysian Malay (Bahasa Melayu Malaysia, not Indonesian)', ru: 'Russian', ar: 'Arabic' }
@@ -148,7 +149,14 @@ export const onRequest: PagesFunction<Env> = async ({ request, env, params }) =>
     return json({ version: meta?.version ?? 0 })
   }
   if (path === 'state' && request.method === 'GET') {
-    const { version, data } = await load(env.DB)
+    let { version, data } = await load(env.DB)
+    // 一次性迁移：支付渠道改为 余额 / Apple Pay / Google Pay / PayOS（下线微信、银联、Stripe、PayPal）
+    if (data.paymentProviders?.some(p => ['wechat', 'unionpay', 'stripe', 'paypal'].includes(p.code)) || !data.paymentProviders?.some(p => p.code === 'payos')) {
+      const fresh = initialState().paymentProviders
+      const old = new Map((data.paymentProviders ?? []).map(p => [p.code, p]))
+      data = { ...data, paymentProviders: fresh.map(p => old.has(p.code) ? { ...p, enabled: old.get(p.code)!.enabled, feeRate: old.get(p.code)!.feeRate } : p) }
+      try { await save(env.DB, data, ['paymentProviders'], version); version += 1 } catch { /* 并发时下次再迁移 */ }
+    }
     return json({ version, data })
   }
   if (path === 'reset' && request.method === 'POST') {
@@ -227,9 +235,7 @@ export const onRequest: PagesFunction<Env> = async ({ request, env, params }) =>
     return new Response(bin, { headers: { 'content-type': row.mime, 'cache-control': 'public, max-age=31536000, immutable', 'access-control-allow-origin': '*' } })
   }
   if (path.startsWith('live/')) return liveApi(env.DB, request, path.split('/').slice(1))
-  if (path.startsWith('pay/')) {
-    // 统一支付网关占位：真实环境在此转发至第三方支付（微信 / 银联 / Stripe …）
-    return json({ ok: true, gateway: 'plam-pay', provider: path.split('/')[1], message: '演示环境：支付回调已模拟' })
-  }
+  // 统一支付网关：Apple Pay / Google Pay / PayOS（见 src/server/pay.ts）
+  if (path.startsWith('pay/')) return payApi(env, request, path.split('/').slice(1), json, { load, save })
   return json({ error: 'not found' }, 404)
 }

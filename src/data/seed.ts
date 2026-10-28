@@ -137,7 +137,7 @@ export function buildSeed() {
     }
     if (status !== 'unpaid' && status !== 'closed') {
       o.paidAt = new Date(new Date(created).getTime() + 5 * 60000).toISOString()
-      o.payment = { provider: pick(['wechat', 'alipay', 'unionpay', 'balance']), tradeNo: `${Date.now().toString().slice(0, 8)}${rint(100000, 999999)}` }
+      o.payment = { provider: pick(['applepay', 'googlepay', 'payos', 'balance']), tradeNo: `${Date.now().toString().slice(0, 8)}${rint(100000, 999999)}` }
     }
     if (['shipped', 'received', 'done', 'refunding'].includes(status)) {
       const company = pick(express)
@@ -204,13 +204,13 @@ export function buildSeed() {
   ]
 
   const paymentProviders: PaymentProvider[] = [
-    { id: 'pay1', name: '微信支付', code: 'wechat', enabled: true, feeRate: 0.6, config: { appId: 'wx8e2f****', mchId: '1623****' }, logoColor: '#07c160', desc: '微信扫码 / H5 / JSAPI 支付' },
-    { id: 'pay2', name: '支付宝', code: 'alipay', enabled: false, feeRate: 0.6, config: { appId: '2021****', gateway: 'openapi.alipay.com' }, logoColor: '#1677ff', desc: '预留接口，可随时接入' },
-    { id: 'pay3', name: '银联云闪付', code: 'unionpay', enabled: true, feeRate: 0.5, config: { merId: '8989****' }, logoColor: '#e60012', desc: '银联二维码与网关支付' },
-    { id: 'pay4', name: 'Stripe', code: 'stripe', enabled: true, feeRate: 2.9, config: { publishableKey: 'pk_live_****', webhook: 'https://plam.pages.dev/api/pay/stripe' }, logoColor: '#635bff', desc: '海外信用卡 / Apple Pay / Google Pay' },
-    { id: 'pay5', name: 'PayPal', code: 'paypal', enabled: false, feeRate: 3.4, config: { clientId: 'AX****' }, logoColor: '#003087', desc: '跨境收款' },
     { id: 'pay6', name: '余额支付', code: 'balance', enabled: true, feeRate: 0, config: {}, logoColor: '#ff5000', desc: '平台账户余额' },
+    { id: 'pay7', name: 'Apple Pay', code: 'applepay', enabled: true, feeRate: 0, config: { 支持设备: 'iPhone / iPad / Mac 的 Safari', 商户验证: '/api/pay/applepay/validate' }, logoColor: '#000000', desc: 'iPhone / iPad / Mac 一键支付' },
+    { id: 'pay8', name: 'Google Pay', code: 'googlepay', enabled: true, feeRate: 0, config: { 支持设备: 'Android / Chrome', 环境: '未配置商户 ID 时为 TEST' }, logoColor: '#1a73e8', desc: 'Android / Chrome 一键支付' },
+    { id: 'pay9', name: 'PayOS', code: 'payos', enabled: true, feeRate: 0, config: { cnyToVnd: '3500', Webhook: 'https://plam.pages.dev/api/pay/payos/webhook' }, logoColor: '#0a5edc', desc: '越南银行扫码 VietQR（按 VND 结算）' },
+    { id: 'pay2', name: '支付宝', code: 'alipay', enabled: false, feeRate: 0.6, config: { appId: '2021****', gateway: 'openapi.alipay.com' }, logoColor: '#1677ff', desc: '预留接口，可随时接入' },
   ]
+
 
   const campaigns: Campaign[] = [
     { id: 'cm1', name: '2026 双11 全球狂欢季', type: 'festival', startAt: daysAgo(-3), endAt: daysAgo(-17), status: 'enrolling', products: ['p1', 'p2', 'p5', 'p9', 'p13'], discount: 0.72 },

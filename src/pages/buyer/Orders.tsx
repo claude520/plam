@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { fmtAddr, fmtPhone } from '@/lib/address'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { ChevronDown, Download, Filter, Printer, Search, Trash2, Truck, MapPin, Package, Check, Star } from 'lucide-react'
+import { ChevronDown, Download, Filter, Printer, Search, Trash2, Truck, MapPin, Package, Star } from 'lucide-react'
 import { useDB } from '@/store/db'
 import { useCurrentUser } from '@/lib/hooks'
 import { Avatar, Empty, Img, Modal, Field, Pagination, Steps } from '@/components/ui'
@@ -18,10 +18,9 @@ export default function Orders() {
   const tab = sp.get('tab') ?? 'all'
   const [q, setQ] = useState('')
   const [page, setPage] = useState(1)
-  const { orders, shops, setOrderStatus, products, createRefund, addReview, payOrder, refunds } = useDB()
+  const { orders, shops, setOrderStatus, products, createRefund, addReview, refunds } = useDB()
   const [refundOf, setRefundOf] = useState<Order | null>(null)
   const [reviewOf, setReviewOf] = useState<Order | null>(null)
-  const [payOf, setPayOf] = useState<Order | null>(null)
   const list = useMemo(() => {
     let r = orders.filter(o => o.userId === user.id)
     if (tab === 'refund') r = r.filter(o => o.status === 'refunding' || refunds.some(rf => rf.orderId === o.id))
@@ -78,7 +77,7 @@ export default function Orders() {
                 <div className="text-center border-l border-ink-100 max-md:hidden"><div className="font-num">¥{money(o.total)}</div>{rf && <div className={cls('mt-1 text-xs', REFUND_STATUS[rf.status].cls)}>{REFUND_STATUS[rf.status].label}</div>}</div>
                 <div className="text-center md:border-l border-ink-100 max-md:flex max-md:items-center max-md:justify-end max-md:gap-3 max-md:border-t max-md:pt-2"><div>实付款 <b className="font-num text-base">¥{money(o.payAmount)}</b></div><div className="text-xs text-ink-400">含运费: ¥{money(o.freight)}</div>{o.payment && <div className="mt-1 inline-block text-xs border border-ink-200 rounded px-1.5 py-0.5 text-ink-500">{PAY_NAMES[o.payment.provider]}</div>}</div>
                 <div className="text-center md:border-l border-ink-100 flex md:flex-col items-center justify-end md:justify-start gap-2 md:gap-1.5">
-                  {o.status === 'unpaid' && <><button onClick={() => setPayOf(o)} className="btn-primary btn-sm w-24">立即付款</button><button onClick={() => { setOrderStatus(o.id, 'closed'); toast('订单已取消') }} className="text-xs text-ink-500 hover:text-brand-500">取消订单</button></>}
+                  {o.status === 'unpaid' && <><button onClick={() => nav(`/pay/${o.id}`)} className="btn-primary btn-sm w-24">立即付款</button><button onClick={() => { setOrderStatus(o.id, 'closed'); toast('订单已取消') }} className="text-xs text-ink-500 hover:text-brand-500">取消订单</button></>}
                   {o.status === 'shipped' && <><button onClick={() => { setOrderStatus(o.id, 'received'); toast('确认收货成功') }} className="btn-primary btn-sm w-24">确认收货</button><Link to={`/my/orders/${o.id}`} className="text-xs text-ink-700 hover:text-brand-500">查看物流</Link></>}
                   {o.status === 'received' && <><button onClick={() => setReviewOf(o)} className="btn-primary btn-sm w-24">评价</button><button onClick={() => nav(`/checkout?pid=${o.items[0].productId}&sku=${products.find(p => p.id === o.items[0].productId)?.skus[0].id}&qty=1`)} className="text-xs text-ink-700 hover:text-brand-500">再买一单</button></>}
                   {(o.status === 'done' || o.status === 'closed') && <><button onClick={() => nav(`/checkout?pid=${o.items[0].productId}&sku=${products.find(p => p.id === o.items[0].productId)?.skus[0].id}&qty=1`)} className="btn-primary btn-sm w-24">再买一单</button>{o.logistics && <Link to={`/my/orders/${o.id}`} className="text-xs text-ink-700 hover:text-brand-500">查看物流</Link>}</>}
@@ -94,7 +93,6 @@ export default function Orders() {
 
       <RefundModal order={refundOf} onClose={() => setRefundOf(null)} onOk={(reason, type, desc) => { createRefund({ orderId: refundOf!.id, userId: user.id, shopId: refundOf!.shopId, amount: refundOf!.payAmount, reason, type, desc }); setRefundOf(null); toast('售后申请已提交') }} />
       <ReviewModal order={reviewOf} onClose={() => setReviewOf(null)} onOk={(rating, content) => { reviewOf!.items.forEach(it => addReview({ productId: it.productId, userId: user.id, orderId: reviewOf!.id, rating, content, images: [], skuText: it.skuText })); setOrderStatus(reviewOf!.id, 'done'); setReviewOf(null); toast('评价成功，获得 20 淘金币') }} />
-      <PayModal order={payOf} onClose={() => setPayOf(null)} onOk={provider => { payOrder(payOf!.id, provider); setPayOf(null); toast('支付成功') }} />
     </div>
   )
 }
@@ -129,16 +127,6 @@ export function ReviewModal({ order, onClose, onOk }: { order: Order | null; onC
   )
 }
 
-export function PayModal({ order, onClose, onOk }: { order: Order | null; onClose: () => void; onOk: (provider: string) => void }) {
-  const all = useDB(s => s.paymentProviders)
-  const providers = useMemo(() => all.filter(p => p.enabled), [all])
-  const [prov, setProv] = useState(providers[0]?.code ?? 'balance')
-  return (
-    <Modal open={!!order} onClose={onClose} title="选择支付方式" footer={<><button className="btn-outline" onClick={onClose}>取消</button><button className="btn-primary" onClick={() => onOk(prov)}>确认支付 ¥{money(order?.payAmount ?? 0)}</button></>}>
-      <div className="grid grid-cols-2 gap-3">{providers.map(p => <button key={p.id} onClick={() => setProv(p.code)} className={cls('flex items-center gap-3 rounded-xl border-2 p-3 text-left', prov === p.code ? 'border-brand-500 bg-brand-50/40' : 'border-ink-200')}><span className="w-9 h-9 rounded-lg text-white flex items-center justify-center font-bold" style={{ background: p.logoColor }}>{p.name[0]}</span><span className="text-sm font-medium">{p.name}</span>{prov === p.code && <Check className="w-4 h-4 text-brand-500 ml-auto" />}</button>)}</div>
-    </Modal>
-  )
-}
 
 export function OrderDetail() {
   const { id } = useParams()

@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { COUNTRIES, countryOf, defaultCountry, fmtAddr, fmtPhone, normPhone, validateAddress, type AddrErrors } from '@/lib/address'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { MapPin, Plus, Check, ShieldCheck, Wallet, QrCode } from 'lucide-react'
+import { MapPin, Plus, Check, ShieldCheck } from 'lucide-react'
+import { PayBox } from '@/components/PayBox'
 import { useDB, genId } from '@/store/db'
 import { useCurrentUser } from '@/lib/hooks'
 import { Img, Modal, Field, Steps } from '@/components/ui'
@@ -13,7 +14,7 @@ export default function Checkout() {
   const [sp] = useSearchParams()
   const nav = useNavigate()
   const user = useCurrentUser()
-  const { products, shops, cart, addresses, upsertAddress, coupons, myCoupons, createOrder, payOrder, removeCart, paymentProviders, settings, updateUser } = useDB()
+  const { products, shops, cart, addresses, upsertAddress, coupons, myCoupons, createOrder, removeCart, settings } = useDB()
   const items = useMemo(() => {
     if (sp.get('from') === 'cart') return cart.filter(c => c.checked).map(c => { const p = products.find(x => x.id === c.productId)!; const sku = p.skus.find(s => s.id === c.skuId)!; return { p, sku, qty: c.qty, cartId: c.id } })
     const p = products.find(x => x.id === sp.get('pid'))
@@ -28,7 +29,7 @@ export default function Checkout() {
   const [couponId, setCouponId] = useState('')
   const [step, setStep] = useState(0)
   const [order, setOrder] = useState<Order | null>(null)
-  const [provider, setProvider] = useState(paymentProviders.find(p => p.enabled)?.code ?? 'balance')
+  const [provider, setProvider] = useState('balance')
   const total = items.reduce((a, it) => a + it.sku.price * it.qty, 0)
   const freight = items.every(it => it.p.freeShipping) ? 0 : settings.freightDefault
   const usable = myCoupons.filter(m => !m.used).map(m => coupons.find(c => c.id === m.couponId)!).filter(c => c && c.status === 'active' && (!c.shopId || c.shopId === shop?.id) && total >= c.threshold)
@@ -47,11 +48,6 @@ export default function Checkout() {
     const o = createOrder(user.id, items.map(it => ({ productId: it.p.id, title: it.p.title, image: it.p.images[0], skuText: Object.values(it.sku.attrs).join(' / '), price: it.sku.price, qty: it.qty })), shop.id, addr, { discount, freight, note, couponId: couponId || undefined, liveId: liveRoom?.id })
     if (items[0].cartId) removeCart(items.map(it => it.cartId))
     setOrder(o); setStep(1); window.scrollTo(0, 0)
-  }
-  const doPay = () => {
-    if (!order) return
-    if (provider === 'balance') { if (user.balance < order.payAmount) return toast('余额不足，请选择其他支付方式', 'error'); updateUser(user.id, { balance: Math.round((user.balance - order.payAmount) * 100) / 100 }) }
-    payOrder(order.id, provider); setStep(2); window.scrollTo(0, 0)
   }
 
   return (
@@ -114,23 +110,7 @@ export default function Checkout() {
         <div className="grid grid-cols-[1fr_320px] lg-stack gap-4 items-start">
           <div className="card p-4 md:p-6">
             <div className="flex items-center justify-between mb-5"><div><div className="font-semibold text-lg">订单提交成功，请尽快付款</div><div className="text-xs text-ink-500 mt-1">订单号 {order.id} · 请在 30 分钟内完成支付，超时订单将自动关闭</div></div><div className="price text-3xl">¥{money(order.payAmount)}</div></div>
-            <div className="font-semibold mb-3">选择支付方式</div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {paymentProviders.filter(p => p.enabled).map(p => (
-                <button key={p.id} onClick={() => setProvider(p.code)} className={cls('flex items-center gap-3 rounded-xl border-2 p-4 text-left transition', provider === p.code ? 'border-brand-500 bg-brand-50/40' : 'border-ink-200 hover:border-ink-300')}>
-                  <span className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold" style={{ background: p.logoColor }}>{p.code === 'balance' ? <Wallet className="w-5 h-5" /> : p.name.slice(0, 1)}</span>
-                  <div><div className="font-medium">{p.name}</div><div className="text-xs text-ink-500">{p.code === 'balance' ? `可用余额 ¥${money(user.balance)}` : p.desc}</div></div>
-                  {provider === p.code && <Check className="w-5 h-5 text-brand-500 ml-auto" />}
-                </button>
-              ))}
-            </div>
-            {provider !== 'balance' && (
-              <div className="mt-5 rounded-xl border border-dashed border-ink-300 p-5 flex items-center gap-5 bg-ink-50">
-                <div className="w-28 h-28 bg-white rounded-lg border border-ink-200 flex items-center justify-center"><QrCode className="w-20 h-20 text-ink-800" /></div>
-                <div className="text-sm text-ink-600"><div className="font-semibold text-ink-900">请使用 {PAY_NAMES[provider]} 扫码支付</div><div className="mt-1 text-xs">演示环境：点击下方"我已完成支付"即可模拟支付回调。真实环境将通过统一支付网关调用第三方支付。</div></div>
-              </div>
-            )}
-            <button onClick={doPay} className="btn-primary btn-lg mt-6 px-10">{provider === 'balance' ? '确认付款' : '我已完成支付'}</button>
+            <PayBox order={order} onPaid={p => { setProvider(p); setStep(2); window.scrollTo(0, 0) }} />
           </div>
           <div className="card p-5 text-sm"><div className="font-semibold mb-3">订单信息</div><div className="space-y-2 text-ink-600"><div>店铺：{shop.name}</div><div>商品：{order.items.length} 件</div><div>收货：{order.address.name} {order.address.phone}</div><div className="text-xs">{order.address.region} {order.address.detail}</div></div></div>
         </div>

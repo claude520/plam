@@ -34,6 +34,7 @@ export const router = createBrowserRouter([
       { path: 'live/:id', element: L(() => import('@/pages/buyer/LiveRoom')) },
       { path: 'cart', element: L(() => import('@/pages/buyer/Cart')) },
       { path: 'checkout', element: L(() => import('@/pages/buyer/Checkout')) },
+      { path: 'pay/:id', element: L(() => import('@/pages/buyer/Pay')) },
       {
         path: 'my', element: L(() => import('@/pages/buyer/MyLayout')), children: [
           { index: true, element: L(() => import('@/pages/buyer/My')) },
