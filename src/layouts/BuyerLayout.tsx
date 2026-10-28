@@ -64,7 +64,7 @@ export function SearchBar({ compactMode, sub }: { compactMode?: boolean; sub?: s
   const loc = useLocation()
   const [q, setQ] = useState(new URLSearchParams(loc.search).get('q') ?? '')
   const [type, setType] = useState<'宝贝' | '店铺'>('宝贝')
-  const hot = ['冰糖烤梨罐头', '降温保暖5折起', '企业采购8.5折起', '下单赢AirPods5', '雪梨银耳', '雪梨', '冰糖烤梨']
+  const hot = ['冰糖烤梨罐头', '降温保暖5折起', '下单赢AirPods5', '雪梨银耳', '雪梨', '冰糖烤梨']
   const submit = (e: React.FormEvent) => { e.preventDefault(); nav(`/search?q=${encodeURIComponent(q.trim())}${type === '店铺' ? '&type=shop' : ''}`) }
   return (
     <form onSubmit={submit} className={cls('flex-1', compactMode ? 'max-w-[420px]' : 'max-w-[640px]')} role="search">

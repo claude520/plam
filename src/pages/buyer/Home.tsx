@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronRight, Zap, Ticket, Tv, Gift, Flame, Store, Grid3X3, RefreshCw, Sparkles, Heart, ShoppingBag, Clock } from 'lucide-react'
+import { ChevronRight, Ticket, Tv, Gift, Flame, Store, Grid3X3, RefreshCw, Sparkles, Heart, ShoppingBag, Clock } from 'lucide-react'
 import { useDB } from '@/store/db'
 import { useCurrentUser } from '@/lib/hooks'
 import { Logo, SearchBar } from '@/layouts/BuyerLayout'
@@ -96,9 +96,6 @@ export default function Home() {
         </div>
         <div className="container-x pb-3 flex items-center gap-5 md:gap-8 overflow-x-auto no-scrollbar whitespace-nowrap">
           <Channel icon={<Tv className="w-3.5 h-3.5" />} label="Plam 直播" to="/live" color="bg-brand-500" />
-          <Channel icon={<Store className="w-3.5 h-3.5" />} label="企业采购" to="/search?q=采购" color="bg-qn-500" />
-          <Channel icon={<Zap className="w-3.5 h-3.5" />} label="司法拍卖" to="/search?q=拍卖" color="bg-rose-500" />
-          <Channel icon={<ShoppingBag className="w-3.5 h-3.5" />} label="Plam 超市" to="/search?q=超市" color="bg-red-500" />
           <Channel icon={<Gift className="w-3.5 h-3.5" />} label="国家补贴" to="/search?q=国补" color="bg-emerald-700" />
           <Channel icon={<Ticket className="w-3.5 h-3.5" />} label="领券中心" to="/my/coupons" color="bg-amber-500" />
           <Channel icon={<Flame className="w-3.5 h-3.5" />} label="双11开门红" to="/search?q=双11" color="bg-brand-500" />

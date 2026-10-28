@@ -14,7 +14,7 @@ export default function MyLayout() {
   const groups: { label: string; to?: string; children?: { label: string; to: string }[]; badge?: string }[] = [
     { label: '我的 Plam', to: '/my' },
     { label: '我的购物车', to: '/cart' },
-    { label: '我的订单', children: [{ label: '已买到的宝贝', to: '/my/orders' }, { label: '我的拍卖', to: '/my/orders?tab=auction' }, { label: '官方集运', to: '/my/orders?tab=ship' }] },
+    { label: '我的订单', children: [{ label: '已买到的宝贝', to: '/my/orders' }, { label: '官方集运', to: '/my/orders?tab=ship' }] },
     { label: '我的卡券包', to: '/my/coupons' },
     { label: '宝贝收藏', to: '/my/favorites', badge: dropCount ? '有降价' : undefined },
     { label: '关注店铺', to: '/my/shops', badge: followedShops.length ? `${followedShops.length}家上新` : undefined },
