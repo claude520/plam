@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { COUNTRIES, countryOf, defaultCountry, fmtAddr, fmtPhone, normPhone, validateAddress, type AddrErrors } from '@/lib/address'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { MapPin, Plus, Check, ShieldCheck, Wallet, QrCode } from 'lucide-react'
 import { useDB, genId } from '@/store/db'
@@ -60,12 +61,12 @@ export default function Checkout() {
         <div className="grid grid-cols-[1fr_320px] lg-stack gap-4 items-start">
           <div className="space-y-4">
             <div className="card p-5">
-              <div className="flex items-center justify-between mb-3"><div className="font-semibold flex items-center gap-1.5"><MapPin className="w-4 h-4 text-brand-500" />收货地址</div><button onClick={() => setEditing({ id: genId('a'), userId: user.id, name: '', phone: '', region: '', detail: '', isDefault: myAddrs.length === 0 })} className="btn-ghost btn-sm text-qn-600"><Plus className="w-3.5 h-3.5" />新增地址</button></div>
+              <div className="flex items-center justify-between mb-3"><div className="font-semibold flex items-center gap-1.5"><MapPin className="w-4 h-4 text-brand-500" />收货地址</div><button onClick={() => setEditing({ id: genId('a'), userId: user.id, name: '', phone: '', country: defaultCountry(), region: '', detail: '', isDefault: myAddrs.length === 0 })} className="btn-ghost btn-sm text-qn-600"><Plus className="w-3.5 h-3.5" />新增地址</button></div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {myAddrs.map(a => (
                   <button key={a.id} onClick={() => setAddrId(a.id)} className={cls('text-left rounded-xl border-2 p-3.5 relative transition', addrId === a.id ? 'border-brand-500 bg-brand-50/40' : 'border-ink-200 hover:border-ink-300')}>
-                    <div className="flex items-center gap-2 text-sm"><span className="font-semibold">{a.name}</span><span className="text-ink-500">{a.phone}</span>{a.isDefault && <span className="tag-red">默认</span>}</div>
-                    <div className="text-xs text-ink-600 mt-1">{a.region} {a.detail}</div>
+                    <div className="flex items-center gap-2 text-sm"><span className="font-semibold">{a.name}</span><span className="text-ink-500" dir="ltr">{fmtPhone(a)}</span>{a.isDefault && <span className="tag-red">默认</span>}</div>
+                    <div className="text-xs text-ink-600 mt-1">{fmtAddr(a)}</div>
                     {addrId === a.id && <Check className="w-4 h-4 text-brand-500 absolute right-3 top-3" />}
                     <span onClick={e => { e.stopPropagation(); setEditing(a) }} className="absolute right-3 bottom-3 text-xs text-qn-600 hover:underline">修改</span>
                   </button>
@@ -103,7 +104,7 @@ export default function Checkout() {
             </div>
             <div className="divider my-4" />
             <div className="flex items-end justify-between"><span>实付款</span><span className="price text-3xl">¥{money(pay)}</span></div>
-            {addr && <div className="text-xs text-ink-500 mt-3 bg-ink-50 rounded-lg p-2.5"><div>寄送至：{addr.region} {addr.detail}</div><div className="mt-0.5">收货人：{addr.name} {addr.phone}</div></div>}
+            {addr && <div className="text-xs text-ink-500 mt-3 bg-ink-50 rounded-lg p-2.5"><div>寄送至：{fmtAddr(addr)}</div><div className="mt-0.5">收货人：{addr.name} <span dir="ltr">{fmtPhone(addr)}</span></div></div>}
             <button onClick={submit} className="btn-primary btn-lg w-full mt-4 text-base">提交订单</button>
             <div className="text-xs text-ink-400 mt-3 flex items-center gap-1"><ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />平台担保交易 · 支付信息加密传输</div>
           </div>
@@ -149,17 +150,34 @@ export default function Checkout() {
 
 export function AddressModal({ addr, onClose, onSave }: { addr: Address | null; onClose: () => void; onSave: (a: Address) => void }) {
   const [f, setF] = useState<Address | null>(addr)
-  if (addr && (!f || f.id !== addr.id)) setF(addr)
+  const [touched, setTouched] = useState<Record<string, boolean>>({})
+  if (addr && (!f || f.id !== addr.id)) { setF({ ...addr, country: addr.country || (addr.name ? 'CN' : defaultCountry()) }); setTouched({}) }
   if (!addr || !f) return null
-  const ok = f.name && /^1\d{10}$/.test(f.phone) && f.region && f.detail
+  const c = countryOf(f.country)
+  const errs = validateAddress(f)
+  const show = (k: keyof AddrErrors) => (touched[k] || touched._all) && errs[k]
+  const blur = (k: string) => () => setTouched(t => ({ ...t, [k]: true }))
+  const save = () => {
+    if (Object.keys(errs).length) { setTouched({ _all: true }); return }
+    onSave({ ...f, name: f.name.trim(), phone: normPhone(f.phone, c), region: f.region.trim(), detail: f.detail.trim(), zip: f.zip?.trim() || undefined })
+  }
+  const Err = ({ k }: { k: keyof AddrErrors }) => show(k) ? <div className="text-xs text-red-500 mt-1">{errs[k]}</div> : null
+  const bad = (k: keyof AddrErrors) => show(k) ? 'border-red-400 focus:border-red-500 focus:ring-red-100' : ''
   return (
-    <Modal open={!!addr} onClose={onClose} title={addr.name ? '修改收货地址' : '新增收货地址'} footer={<><button className="btn-outline" onClick={onClose}>取消</button><button className="btn-primary" disabled={!ok} onClick={() => onSave(f)}>保存</button></>}>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="收货人" required><input className="input" value={f.name} onChange={e => setF({ ...f, name: e.target.value })} /></Field>
-        <Field label="手机号" required><input className="input" value={f.phone} onChange={e => setF({ ...f, phone: e.target.value })} placeholder="11 位手机号" /></Field>
-        <div className="col-span-2"><Field label="所在地区" required><input className="input" value={f.region} onChange={e => setF({ ...f, region: e.target.value })} placeholder="省 市 区" /></Field></div>
-        <div className="col-span-2"><Field label="详细地址" required><textarea className="input h-20 py-2" value={f.detail} onChange={e => setF({ ...f, detail: e.target.value })} placeholder="街道、楼牌号等" /></Field></div>
-        <label className="flex items-center gap-2 text-sm col-span-2"><input type="checkbox" className="accent-brand-500" checked={f.isDefault} onChange={e => setF({ ...f, isDefault: e.target.checked })} />设为默认地址</label>
+    <Modal open={!!addr} onClose={onClose} title={addr.name ? '修改收货地址' : '新增收货地址'} footer={<><button className="btn-outline" onClick={onClose}>取消</button><button className="btn-primary" onClick={save}>保存</button></>}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div><Field label="收货人" required><input className={cls('input', bad('name'))} value={f.name} onBlur={blur('name')} onChange={e => setF({ ...f, name: e.target.value })} placeholder="姓名" autoComplete="name" /></Field><Err k="name" /></div>
+        <div><Field label="所在国家" required><select aria-label="所在国家" className={cls('input', bad('country'))} value={f.country} onChange={e => setF({ ...f, country: e.target.value })}>{COUNTRIES.map(x => <option key={x.code} value={x.code}>{x.flag} {x.name} · {x.en}</option>)}</select></Field><Err k="country" /></div>
+        <div className="sm:col-span-2"><Field label="手机号" required>
+          <div className={cls('flex rounded-lg border overflow-hidden focus-within:ring-2', show('phone') ? 'border-red-400 focus-within:ring-red-100' : 'border-ink-200 focus-within:border-brand-500 focus-within:ring-brand-100')}>
+            <span className="shrink-0 px-3 flex items-center gap-1 bg-ink-50 text-sm text-ink-700 border-r border-ink-200" dir="ltr">{c.flag} +{c.dial}</span>
+            <input className="flex-1 min-w-0 h-10 px-3 text-sm outline-none" dir="ltr" inputMode="tel" autoComplete="tel-national" value={f.phone} onBlur={blur('phone')} onChange={e => setF({ ...f, phone: e.target.value })} placeholder={`${c.len[0] === c.len[1] ? c.len[0] : `${c.len[0]}–${c.len[1]}`} 位号码，开头的 0 可省略`} />
+          </div>
+        </Field><Err k="phone" /></div>
+        <div><Field label="所在城市" required><input className={cls('input', bad('region'))} value={f.region} onBlur={blur('region')} onChange={e => setF({ ...f, region: e.target.value })} placeholder="城市 / 省州，如 胡志明市" autoComplete="address-level2" /></Field><Err k="region" /></div>
+        <div><Field label="邮政编码"><input className={cls('input', bad('zip'))} value={f.zip ?? ''} onBlur={blur('zip')} onChange={e => setF({ ...f, zip: e.target.value })} placeholder={c.zipHint ? `选填，${c.zipHint}` : '选填'} autoComplete="postal-code" dir="ltr" /></Field><Err k="zip" /></div>
+        <div className="sm:col-span-2"><Field label="详细地址" required><textarea className={cls('input h-20 py-2', bad('detail'))} value={f.detail} onBlur={blur('detail')} onChange={e => setF({ ...f, detail: e.target.value })} placeholder="区 / 街道 / 门牌号 / 楼栋房间号，如 7 郡 阮氏明开街 1 号 402 室" autoComplete="street-address" /></Field><Err k="detail" /></div>
+        <label className="flex items-center gap-2 text-sm sm:col-span-2"><input type="checkbox" className="accent-brand-500" checked={f.isDefault} onChange={e => setF({ ...f, isDefault: e.target.checked })} />设为默认地址</label>
       </div>
     </Modal>
   )

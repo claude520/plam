@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { fmtAddr, fmtPhone } from '@/lib/address'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ChevronDown, Download, Filter, Printer, Search, Trash2, Truck, MapPin, Package, Check, Star } from 'lucide-react'
 import { useDB } from '@/store/db'
@@ -171,7 +172,7 @@ export function OrderDetail() {
           </div>
         </div>
         <div className="space-y-4">
-          <div className="card p-5 text-sm"><div className="font-semibold mb-3 flex items-center gap-1.5"><MapPin className="w-4 h-4 text-brand-500" />收货信息</div><div className="text-ink-800">{o.address.name} {o.address.phone}</div><div className="text-ink-600 mt-1">{o.address.region} {o.address.detail}</div></div>
+          <div className="card p-5 text-sm"><div className="font-semibold mb-3 flex items-center gap-1.5"><MapPin className="w-4 h-4 text-brand-500" />收货信息</div><div className="text-ink-800">{o.address.name} <span dir="ltr">{fmtPhone(o.address)}</span></div><div className="text-ink-600 mt-1">{fmtAddr(o.address)}</div></div>
           <div className="card p-5 text-sm">
             <div className="font-semibold mb-3 flex items-center gap-1.5"><Truck className="w-4 h-4 text-brand-500" />物流信息</div>
             {o.logistics ? <>

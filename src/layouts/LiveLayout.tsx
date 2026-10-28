@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Home, Star, Radio, TrendingUp, BarChart3, Wallet, Sparkles, BookOpen, Globe, Headphones, MessageSquareWarning, ChevronDown, Menu, X, ArrowLeftRight, Play, ChevronUp } from 'lucide-react'
+import { LanguageMenu } from '@/components/LanguageMenu'
 import { useCurrentShop, useCurrentUser } from '@/lib/hooks'
 import { useDB } from '@/store/db'
 import { Avatar } from '@/components/ui'
@@ -52,6 +53,7 @@ export default function LiveLayout() {
         <div className="ml-auto flex items-center gap-1 text-ink-600">
           <div className="hidden lg:contents">{[[<Sparkles className="w-4 h-4" />, 'AI助手', '/seller/live/tools'], [<BookOpen className="w-4 h-4" />, '使用指南', '/seller/live/classroom'], [<Globe className="w-4 h-4" />, '直播门户', '/live']].map(([ic, l, to]) => <Link key={l as string} to={to as string} className="flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-lg hover:bg-ink-50 text-[11px]">{ic as React.ReactNode}{l as string}</Link>)}<span className="w-px h-6 bg-ink-200 mx-1" />{[[<Headphones className="w-4 h-4" />, '直播客服', '/seller/service'], [<MessageSquareWarning className="w-4 h-4" />, '问题反馈', '/seller/market?tab=ticket']].map(([ic, l, to]) => <Link key={l as string} to={to as string} className="flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-lg hover:bg-ink-50 text-[11px]">{ic as React.ReactNode}{l as string}</Link>)}</div>
           {current && <Link to={`/seller/live/studio/${current.id}`} className="ml-2 btn-primary btn-sm h-8 gap-1"><Radio className="w-3.5 h-3.5" />直播中 · 进入中控台</Link>}
+          <LanguageMenu variant="icon" />
           <div className="relative group ml-2">
             <button className="flex items-center gap-2 pl-1 pr-1 py-1 rounded-lg hover:bg-ink-50"><Avatar src={shop.logo} name={shop.name} size={34} /><div className="text-left hidden md:block"><div className="text-sm font-medium text-ink-900 max-w-[120px] truncate flex items-center gap-1">{user?.username}<span className="tag bg-amber-100 text-amber-700 text-[10px]">V1</span></div><div className="text-[11px] text-ink-400">内容质量无评分</div></div><ChevronDown className="w-4 h-4 text-ink-400" /></button>
             <div className="absolute right-0 top-full pt-1 hidden group-hover:block z-50"><div className="bg-white shadow-float rounded-lg py-1 w-44 text-sm"><Link to="/seller/live/settings" className="block px-3 py-2 hover:bg-ink-50">直播设置</Link><Link to="/live" className="block px-3 py-2 hover:bg-ink-50">查看直播广场</Link><Link to="/seller" className="flex items-center gap-1 px-3 py-2 hover:bg-ink-50"><ArrowLeftRight className="w-3.5 h-3.5" />返回商家中心</Link></div></div>

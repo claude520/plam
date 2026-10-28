@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Home, Star, FileText, Package, Megaphone, Rocket, Headphones, Store, Users, Wallet, BarChart3, Grid2X2, Search, Bell, MessageSquare, Download, BookOpen, ScrollText, Moon, ChevronDown, LogOut, ArrowLeftRight, Menu, X } from 'lucide-react'
+import { LanguageMenu } from '@/components/LanguageMenu'
 import { useCurrentShop, useCurrentUser } from '@/lib/hooks'
 import { useDB } from '@/store/db'
 import { useSession } from '@/store/session'
@@ -58,6 +59,7 @@ export default function SellerLayout() {
         <div className="relative w-64 hidden md:block"><Search className="w-4 h-4 text-ink-400 absolute left-3 top-1/2 -translate-y-1/2" /><input aria-label="搜索功能" className="input-qn pl-9 bg-ink-50 border-transparent" placeholder="双11 预售规则解读" onKeyDown={e => { if (e.key === 'Enter') nav(`/seller/products?q=${encodeURIComponent((e.target as HTMLInputElement).value)}`) }} /></div>
         <div className="ml-auto flex items-center gap-1 text-ink-600">
           <div className="hidden lg:contents">{[[<Moon className="w-4 h-4" />, '管家', '/seller/service?tab=ai'], [<ScrollText className="w-4 h-4" />, '协议', '/seller/shop?tab=agreement'], [<Download className="w-4 h-4" />, '下载', '/seller/market'], [<BookOpen className="w-4 h-4" />, '规则', '/seller/shop?tab=rules']].map(([ic, l, to]) => <Link key={l as string} to={to as string} className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg hover:bg-ink-50 text-[11px]">{ic as React.ReactNode}{l as string}</Link>)}</div>
+          <LanguageMenu variant="icon" />
           <span className="w-px h-6 bg-ink-200 mx-2 hidden lg:block" />
           <Link to="/seller/service" className="relative flex flex-col items-center gap-0.5 px-2 md:px-3 py-1 rounded-lg hover:bg-ink-50 text-[11px] whitespace-nowrap"><MessageSquare className="w-4 h-4" />消息<Badge n={unread} className="absolute -top-0.5 right-1" /></Link>
           <Link to="/seller/orders" className="relative flex flex-col items-center gap-0.5 px-2 md:px-3 py-1 rounded-lg hover:bg-ink-50 text-[11px] whitespace-nowrap"><Bell className="w-4 h-4" />待办<Badge n={pending} className="absolute -top-0.5 right-1" /></Link>

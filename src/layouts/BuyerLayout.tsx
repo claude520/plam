@@ -5,6 +5,7 @@ import { useDB } from '@/store/db'
 import { useSession } from '@/store/session'
 import { useCurrentUser } from '@/lib/hooks'
 import { Badge } from '@/components/ui'
+import { LanguageMenu } from '@/components/LanguageMenu'
 import { cls } from '@/lib/format'
 
 export function Logo({ sub, className }: { sub?: string; className?: string }) {
@@ -40,7 +41,7 @@ export function TopBar() {
             <><Link to="/login" className="text-brand-500 font-medium">亲，请登录</Link><Link to="/register">免费注册</Link></>
           )}
           <span className="text-ink-400">网页无障碍</span>
-          <span className="flex items-center gap-0.5">Language<ChevronDown className="w-3 h-3" /></span>
+          <LanguageMenu />
         </div>
         <nav className="flex items-center gap-5">
           <Link to="/" className="hover:text-brand-500">Plam 首页</Link>

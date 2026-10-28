@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { defaultCountry, fmtAddr, fmtPhone } from '@/lib/address'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Heart, Trash2, Clock, Store, Ticket, Plus, MapPin, Shield, Smartphone, Lock, MessageSquare, FileText, Star, Send } from 'lucide-react'
 import { useDB, genId } from '@/store/db'
@@ -107,10 +108,10 @@ export function AddressPage() {
   const mine = addresses.filter(a => a.userId === user.id)
   return (
     <div className="card p-5">
-      <div className="flex items-center justify-between mb-4"><div className="font-semibold text-lg flex items-center gap-2"><MapPin className="w-5 h-5 text-brand-500" />收货地址</div><button onClick={() => setEditing({ id: genId('a'), userId: user.id, name: '', phone: '', region: '', detail: '', isDefault: mine.length === 0 })} className="btn-primary btn-sm"><Plus className="w-3.5 h-3.5" />新增收货地址</button></div>
+      <div className="flex items-center justify-between mb-4"><div className="font-semibold text-lg flex items-center gap-2"><MapPin className="w-5 h-5 text-brand-500" />收货地址</div><button onClick={() => setEditing({ id: genId('a'), userId: user.id, name: '', phone: '', country: defaultCountry(), region: '', detail: '', isDefault: mine.length === 0 })} className="btn-primary btn-sm"><Plus className="w-3.5 h-3.5" />新增收货地址</button></div>
       <div className="text-xs text-ink-400 mb-3">已保存 {mine.length} 条地址，最多可保存 20 条</div>
-      <table className="w-full text-sm"><thead><tr className="bg-ink-50 text-ink-500 text-left"><th className="px-3 py-2.5 font-medium">收货人</th><th className="px-3 py-2.5 font-medium">所在地区</th><th className="px-3 py-2.5 font-medium">详细地址</th><th className="px-3 py-2.5 font-medium">手机</th><th className="px-3 py-2.5 font-medium text-right">操作</th></tr></thead>
-        <tbody>{mine.map(a => <tr key={a.id} className="border-b border-ink-100"><td className="px-3 py-3">{a.name}{a.isDefault && <span className="tag-red ml-2">默认地址</span>}</td><td className="px-3 py-3">{a.region}</td><td className="px-3 py-3">{a.detail}</td><td className="px-3 py-3 font-num">{a.phone}</td><td className="px-3 py-3 text-right space-x-3"><button onClick={() => setEditing(a)} className="link">修改</button><button onClick={() => setDel(a.id)} className="link text-ink-500">删除</button>{!a.isDefault && <button onClick={() => { upsertAddress({ ...a, isDefault: true }); toast('已设为默认') }} className="link text-ink-500">设为默认</button>}</td></tr>)}</tbody></table>
+      <table className="w-full text-sm"><thead><tr className="bg-ink-50 text-ink-500 text-left"><th className="px-3 py-2.5 font-medium">收货人</th><th className="px-3 py-2.5 font-medium">国家 / 城市</th><th className="px-3 py-2.5 font-medium">详细地址</th><th className="px-3 py-2.5 font-medium">手机</th><th className="px-3 py-2.5 font-medium text-right">操作</th></tr></thead>
+        <tbody>{mine.map(a => <tr key={a.id} className="border-b border-ink-100"><td className="px-3 py-3">{a.name}{a.isDefault && <span className="tag-red ml-2">默认地址</span>}</td><td className="px-3 py-3">{fmtAddr({ country: a.country, region: a.region, detail: '' })}</td><td className="px-3 py-3">{a.detail}{a.zip ? ` ${a.zip}` : ''}</td><td className="px-3 py-3 font-num" dir="ltr">{fmtPhone(a)}</td><td className="px-3 py-3 text-right space-x-3"><button onClick={() => setEditing(a)} className="link">修改</button><button onClick={() => setDel(a.id)} className="link text-ink-500">删除</button>{!a.isDefault && <button onClick={() => { upsertAddress({ ...a, isDefault: true }); toast('已设为默认') }} className="link text-ink-500">设为默认</button>}</td></tr>)}</tbody></table>
       {mine.length === 0 && <Empty text="还没有收货地址" />}
       <AddressModal addr={editing} onClose={() => setEditing(null)} onSave={a => { upsertAddress(a); setEditing(null); toast('地址已保存') }} />
       <Confirm open={!!del} onClose={() => setDel(null)} onOk={() => { removeAddress(del!); toast('已删除') }} title="删除该收货地址？" danger />

@@ -109,8 +109,8 @@ export function buildSeed() {
 
   // ---------- addresses ----------
   const addresses: Address[] = [
-    { id: 'a1', userId: 'u-buyer-1', name: '希言', phone: '13800002008', region: '浙江省 杭州市 余杭区', detail: '文一西路 969 号 淘宝城 3 号楼 12 层', isDefault: true },
-    { id: 'a2', userId: 'u-buyer-1', name: '陈先生', phone: '13900001234', region: '广东省 深圳市 南山区', detail: '科技园南区 深南大道 9988 号', isDefault: false },
+    { id: 'a1', userId: 'u-buyer-1', name: '希言', phone: '13800002008', country: 'CN', region: '浙江省 杭州市 余杭区', detail: '文一西路 969 号 淘宝城 3 号楼 12 层', isDefault: true },
+    { id: 'a2', userId: 'u-buyer-1', name: '陈先生', phone: '13900001234', country: 'CN', region: '广东省 深圳市 南山区', detail: '科技园南区 深南大道 9988 号', isDefault: false },
   ]
 
   // ---------- orders ----------

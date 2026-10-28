@@ -68,3 +68,8 @@ input, select, textarea { font: inherit; }
 @media (max-width: 1023px) {
   .lg-stack[class*="grid-cols-["] { grid-template-columns: minmax(0, 1fr) !important; }
 }
+
+/* 多语言：翻译进行中的顶部进度条 */
+.i18n-bar { position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 10000; pointer-events: none; transition: opacity .3s;
+  background: linear-gradient(90deg, transparent, #ff5000, #ff9a3c, transparent); background-size: 200% 100%; animation: i18n-slide 1.1s linear infinite; }
+@keyframes i18n-slide { from { background-position: 200% 0 } to { background-position: -200% 0 } }

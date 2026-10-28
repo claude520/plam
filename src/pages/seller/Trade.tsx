@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { fmtAddr, fmtPhone } from '@/lib/address'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { Truck, MessageSquare, RotateCcw, MapPin, Phone, Search, ChevronRight } from 'lucide-react'
 import { useDB } from '@/store/db'
@@ -112,7 +113,7 @@ function ShipModal({ order, onClose, onOk }: { order: Order | null; onClose: () 
   return (
     <Modal open={!!order} onClose={onClose} title="订单发货" footer={<><button className="btn-outline" onClick={onClose}>取消</button><button className="btn-qn" disabled={!no} onClick={() => onOk(company, no)}>确认发货</button></>}>
       {order && <div className="space-y-4">
-        <div className="bg-ink-50 rounded-lg p-3 text-sm"><div className="flex items-center gap-1.5"><MapPin className="w-4 h-4 text-qn-500" />{order.address.name} {order.address.phone}</div><div className="text-ink-600 mt-1 ml-5">{order.address.region} {order.address.detail}</div></div>
+        <div className="bg-ink-50 rounded-lg p-3 text-sm"><div className="flex items-center gap-1.5"><MapPin className="w-4 h-4 text-qn-500" />{order.address.name} <span dir="ltr">{fmtPhone(order.address)}</span></div><div className="text-ink-600 mt-1 ml-5">{fmtAddr(order.address)}</div></div>
         <Field label="物流公司" required><select className="input-qn" value={company} onChange={e => setCompany(e.target.value)}>{EXPRESS.map(e => <option key={e}>{e}</option>)}</select></Field>
         <Field label="运单号" required><div className="flex gap-2"><input className="input-qn" value={no} onChange={e => setNo(e.target.value)} placeholder="请输入或扫描运单号" /><button type="button" className="btn-outline whitespace-nowrap" onClick={() => setNo(`${company.slice(0, 2) === '顺丰' ? 'SF' : 'YT'}${Math.floor(Math.random() * 9e11 + 1e11)}`)}>电子面单取号</button></div></Field>
       </div>}

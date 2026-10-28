@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { LayoutDashboard, Users, Store, Package, FolderTree, FileText, RotateCcw, Star, Image, Ticket, Flag, Megaphone, CreditCard, Landmark, PieChart, ShieldCheck, ScrollText, Settings, Bell, Search, ChevronDown, LogOut, ChevronLeft, ArrowLeftRight, Menu, X, Radio } from 'lucide-react'
+import { LanguageMenu } from '@/components/LanguageMenu'
 import { useCurrentUser } from '@/lib/hooks'
 import { useDB } from '@/store/db'
 import { useSession } from '@/store/session'
@@ -52,6 +53,7 @@ export default function AdminLayout() {
           <div className="ml-auto flex items-center gap-2">
             {settings.maintenance && <span className="tag-red">维护模式</span>}
             <Link to="/" className="btn-ghost btn-sm hidden sm:inline-flex"><ArrowLeftRight className="w-3.5 h-3.5" />前台</Link>
+            <LanguageMenu variant="icon" />
             <Link to="/admin/products" className="relative p-2 rounded-lg hover:bg-ink-50 text-ink-600" aria-label="待办"><Bell className="w-5 h-5" /><Badge n={todo} className="absolute -top-0.5 -right-0.5" /></Link>
             <div className="relative group">
               <button className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-lg hover:bg-ink-50"><Avatar src={user?.avatar} name={user?.nickname ?? ''} size={32} /><span className="text-sm font-medium hidden sm:inline">{user?.nickname}</span><ChevronDown className="w-4 h-4 text-ink-400" /></button>

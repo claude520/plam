@@ -150,8 +150,12 @@ export interface Address {
   userId: string
   name: string
   phone: string
+  /** 国家代码（ISO 3166-1，如 CN / VN）；老数据为空时视为中国 */
+  country?: string
+  /** 城市 / 省州 */
   region: string
   detail: string
+  zip?: string
   isDefault: boolean
 }
 

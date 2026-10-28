@@ -6,3 +6,6 @@ pages_build_output_dir = "dist"
 binding = "DB"
 database_name = "plam-db"
 database_id = "60f602d5-402f-4c39-8f25-3bdd28bf3bad"
+
+[ai]
+binding = "AI"
