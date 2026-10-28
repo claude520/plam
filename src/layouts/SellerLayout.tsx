@@ -82,7 +82,7 @@ export default function SellerLayout() {
         </div>
       )}
       <div className="flex flex-1">
-        <nav className="hidden lg:flex w-[108px] bg-white border-r border-ink-200 py-3 sticky top-16 self-start h-[calc(100vh-64px)] flex-col" onMouseLeave={() => setOpen(null)}>
+        <nav className="hidden lg:flex w-[108px] bg-white border-r border-ink-200 py-3 sticky top-16 z-30 self-start h-[calc(100vh-64px)] flex-col" onMouseLeave={() => setOpen(null)}>
           {SELLER_MENU.map(m => m.to ? (
             <NavLink key={m.key} to={m.to} end onMouseEnter={() => setOpen(null)} className={cls('mx-3 my-0.5 flex items-center gap-2 px-3 h-10 rounded-lg text-[15px] transition', activeKey === m.key ? 'bg-qn-50 text-qn-600 font-medium' : 'text-ink-700 hover:bg-ink-50')}>{m.icon}{m.label}</NavLink>
           ) : (
