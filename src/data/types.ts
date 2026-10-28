@@ -59,6 +59,41 @@ export interface Product {
   detail: string
   views: number
   favorites: number
+  /** 商品发布页填写的完整信息（复刻淘宝发布表单） */
+  pub?: PublishInfo
+}
+
+export interface DetailBlock { id: string; type: 'image' | 'text'; value: string }
+export interface PublishInfo {
+  catId: string
+  catPath: string[]
+  brand: string
+  props: Record<string, string>
+  customProps: { name: string; value: string }[]
+  isCustom: boolean
+  purchaseFrom: 'cn' | 'abroad'
+  guideTitle: string
+  buyNotes: string
+  sellerCode: string
+  multiDiscount: { enabled: boolean; count: number; discount: number }
+  stockMode: 'order' | 'pay'
+  listing: 'now' | 'timed' | 'warehouse'
+  listAt?: string
+  shipTime: '24h' | '48h' | 'gt48h'
+  shipBySku: boolean
+  delivery: boolean
+  freightTemplate: string
+  regionLimit: 'none' | 'template'
+  warranty: boolean
+  sevenDays: boolean
+  images34: string[]
+  video: string
+  whiteImage: string
+  detailBlocks: DetailBlock[]
+  shopCats: string[]
+  skuMode: 'custom' | 'standard'
+  skuImages: Record<string, string>
+  template: string
 }
 
 export interface Shop {

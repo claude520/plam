@@ -117,12 +117,16 @@ export default function Item() {
           {tab === 'detail' && (
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-sm text-ink-600 mb-6">
-                <div>品牌：{shop.name.replace(/旗舰店|官方|专营店/g, '')}</div><div>类目：{catName}</div>
+                <div>品牌：{p.pub?.brand || shop.name.replace(/旗舰店|官方|专营店/g, '')}</div><div>类目：{p.pub?.catPath.join(' / ') || catName}</div>
+                {p.pub && Object.entries(p.pub.props).filter(([k, v]) => v && !k.startsWith('ship:')).map(([k, v]) => <div key={k}>{k}：{v}</div>)}
+                {p.pub?.customProps.filter(c => c.name && c.value).map(c => <div key={c.name}>{c.name}：{c.value}</div>)}
                 {p.attrs.map(a => <div key={a.name}>{a.name}：{a.values.join(' / ')}</div>)}
+                {p.pub && <div>采购地：{p.pub.purchaseFrom === 'cn' ? '中国内地（大陆）' : '中国港澳台地区及其他国家和地区'}</div>}
+                {p.pub?.buyNotes && <div className="md:col-span-2 text-amber-700">购买须知：{p.pub.buyNotes}</div>}
                 <div>上架时间：{fmtDate(p.createdAt, false)}</div><div>商品编号：{p.id.toUpperCase()}2026</div>
               </div>
               <div className="prose text-sm text-ink-700 max-w-none" dangerouslySetInnerHTML={{ __html: p.detail }} />
-              <div className="space-y-3 mt-4">{p.images.map(src => <Img key={src} src={src} alt="详情图" w={800} h={800} className="w-full rounded-xl" />)}</div>
+              {!p.pub && <div className="space-y-3 mt-4">{p.images.map(src => <Img key={src} src={src} alt="详情图" w={800} h={800} className="w-full rounded-xl" />)}</div>}
             </div>
           )}
           {tab === 'reviews' && (

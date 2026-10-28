@@ -63,8 +63,8 @@ export const router = createBrowserRouter([
       { path: 'logistics', element: LN(() => import('@/pages/seller/Trade'), 'Logistics') },
       { path: 'logistics/service', element: LN(() => import('@/pages/seller/LogisticsService'), 'LogisticsService') },
       { path: 'products', element: LN(() => import('@/pages/seller/Products'), 'ProductList') },
-      { path: 'products/new', element: LN(() => import('@/pages/seller/Products'), 'ProductEdit') },
-      { path: 'products/:id/edit', element: LN(() => import('@/pages/seller/Products'), 'ProductEdit') },
+      { path: 'products/new', element: <Navigate to="/seller/publish/category" replace /> },
+      { path: 'products/:id/edit', element: LN(() => import('@/pages/seller/Products'), 'EditRedirect') },
       { path: 'inventory', element: LN(() => import('@/pages/seller/InventorySku'), 'Inventory') },
       { path: 'service/overview', element: LN(() => import('@/pages/seller/CsOverview'), 'CsOverview') },
       { path: 'marketing', element: LN(() => import('@/pages/seller/Marketing'), 'Marketing') },
@@ -107,6 +107,9 @@ export const router = createBrowserRouter([
     ],
   },
   { path: '/seller/live/studio/:id', element: <Guard role="seller">{L(() => import('@/pages/seller/live/Studio'))}</Guard> },
+  // 商品发布（独立页，复刻 item.upload.taobao.com）：选类目 → 发布表单
+  { path: '/seller/publish/category', element: <Guard role="seller">{L(() => import('@/pages/seller/publish/Category'))}</Guard> },
+  { path: '/seller/publish', element: <Guard role="seller">{L(() => import('@/pages/seller/publish/Publish'))}</Guard> },
   {
     path: '/admin', element: <Guard role="admin">{L(() => import('@/layouts/AdminLayout'))}</Guard>, children: [
       { index: true, element: L(() => import('@/pages/admin/Dashboard')) },

@@ -7,6 +7,7 @@
 // GET  /api/live/:id/poll?after=&media=&cid=&uid=   拉取新事件 / 新媒体分片 / 在线人数
 // POST /api/live/:id/event  { type, data }          评论 / 点赞 / 讲解 / 公告 / 下播等
 // POST /api/live/:id/media  { seq, chunk?, frame? } 主播推流（webm 分片 + JPEG 关键帧）
+// POST /api/asset { data } / GET /api/asset/:id          商品图片资源（发布页上传）
 import { reducers, COLLECTIONS, type DataState, type ReducerName } from '../../src/data/reducers'
 import { initialState } from '../../src/data/initial'
 
@@ -16,6 +17,7 @@ type Row = { key: string; data: string }
 const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'access-control-allow-origin': '*' } })
 
 async function ensure(db: D1Database) {
+  await db.exec('CREATE TABLE IF NOT EXISTS assets (id TEXT PRIMARY KEY, mime TEXT NOT NULL, data TEXT NOT NULL, ts INTEGER NOT NULL); ')
   await db.exec('CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, data TEXT NOT NULL); CREATE TABLE IF NOT EXISTS meta (id INTEGER PRIMARY KEY CHECK (id = 1), version INTEGER NOT NULL); CREATE TABLE IF NOT EXISTS live_events (id INTEGER PRIMARY KEY AUTOINCREMENT, room_id TEXT NOT NULL, type TEXT NOT NULL, data TEXT NOT NULL, ts INTEGER NOT NULL); CREATE INDEX IF NOT EXISTS live_events_room ON live_events(room_id, id); CREATE TABLE IF NOT EXISTS live_media (room_id TEXT NOT NULL, seq INTEGER NOT NULL, chunk TEXT, frame TEXT, mime TEXT, ts INTEGER NOT NULL, PRIMARY KEY (room_id, seq)); CREATE TABLE IF NOT EXISTS live_viewers (room_id TEXT NOT NULL, client_id TEXT NOT NULL, user_id TEXT, last_seen INTEGER NOT NULL, PRIMARY KEY (room_id, client_id)); CREATE TABLE IF NOT EXISTS live_counters (room_id TEXT PRIMARY KEY, likes INTEGER NOT NULL DEFAULT 0, comments INTEGER NOT NULL DEFAULT 0, peak INTEGER NOT NULL DEFAULT 0, seq INTEGER NOT NULL DEFAULT 0, mime TEXT)')
 }
 
@@ -138,6 +140,22 @@ export const onRequest: PagesFunction<Env> = async ({ request, env, params }) =>
       catch (e) { if (String(e).includes('conflict')) continue; return json({ error: String(e) }, 500) }
     }
     return json({ error: 'conflict' }, 409)
+  }
+  // 图片资源：POST /api/asset { data: dataURL } → { url }；GET /api/asset/:id 返回图片
+  if (path === 'asset' && request.method === 'POST') {
+    const body = (await request.json()) as { data?: string }
+    const m = /^data:(image\/[a-z+]+);base64,(.+)$/i.exec(body.data ?? '')
+    if (!m) return json({ error: 'bad image' }, 400)
+    if (m[2].length > 1_400_000) return json({ error: 'image too large' }, 413)
+    const id = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`
+    await env.DB.prepare('INSERT INTO assets (id, mime, data, ts) VALUES (?1, ?2, ?3, ?4)').bind(id, m[1], m[2], Date.now()).run()
+    return json({ url: `/api/asset/${id}` })
+  }
+  if (path.startsWith('asset/') && request.method === 'GET') {
+    const row = await env.DB.prepare('SELECT mime, data FROM assets WHERE id = ?1').bind(path.slice(6)).first<{ mime: string; data: string }>()
+    if (!row) return new Response('not found', { status: 404 })
+    const bin = Uint8Array.from(atob(row.data), c => c.charCodeAt(0))
+    return new Response(bin, { headers: { 'content-type': row.mime, 'cache-control': 'public, max-age=31536000, immutable', 'access-control-allow-origin': '*' } })
   }
   if (path.startsWith('live/')) return liveApi(env.DB, request, path.split('/').slice(1))
   if (path.startsWith('pay/')) {

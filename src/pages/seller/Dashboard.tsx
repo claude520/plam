@@ -59,7 +59,7 @@ export default function SellerDashboard() {
         <section className="card p-5">
           <div className="flex items-center justify-between"><h2 className="font-semibold text-base flex items-center gap-2">我的应用<span className="text-xs text-ink-400 font-normal">常用工具一键直达</span></h2><Link to="/seller/market" className="text-xs text-ink-400 flex items-center hover:text-qn-600">服务市场<ChevronRight className="w-3.5 h-3.5" /></Link></div>
           <div className="grid grid-cols-6 max-md:!grid-cols-3 gap-3 mt-4">
-            {[[<ClipboardList />, '工单中心', '/seller/market?tab=ticket', 'bg-emerald-500'], [<BarChart3 />, '生意参谋', '/seller/data', 'bg-qn-500'], [<Users />, '员工管理', '/seller/shop?tab=staff', 'bg-violet-500'], [<Truck />, '物流管家', '/seller/logistics', 'bg-sky-500'], [<Package />, '发布商品', '/seller/products/new', 'bg-brand-500'], [<Bot />, 'AI 生意管家', '/seller/service?tab=ai', 'bg-pink-500']].map(([ic, l, to, c]) => (
+            {[[<ClipboardList />, '工单中心', '/seller/market?tab=ticket', 'bg-emerald-500'], [<BarChart3 />, '生意参谋', '/seller/data', 'bg-qn-500'], [<Users />, '员工管理', '/seller/shop?tab=staff', 'bg-violet-500'], [<Truck />, '物流管家', '/seller/logistics', 'bg-sky-500'], [<Package />, '发布商品', '/seller/publish/category', 'bg-brand-500'], [<Bot />, 'AI 生意管家', '/seller/service?tab=ai', 'bg-pink-500']].map(([ic, l, to, c]) => (
               <Link key={l as string} to={to as string} className="flex flex-col items-center gap-2 py-3 rounded-xl hover:bg-ink-50 transition"><span className={cls('w-12 h-12 rounded-2xl text-white flex items-center justify-center [&>svg]:w-6 [&>svg]:h-6', c as string)}>{ic as React.ReactNode}</span><span className="text-sm">{l as string}</span></Link>
             ))}
           </div>
