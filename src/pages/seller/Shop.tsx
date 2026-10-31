@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Navigate, useSearchParams } from 'react-router-dom'
 import { Send, Bot, Users, Smile, Wallet, ArrowDownToLine, ArrowUpFromLine, FileText, BarChart3, Grid2X2, Star, Plus, Palette, Image as ImageIcon, ShieldCheck, BookOpen } from 'lucide-react'
 import { useDB } from '@/store/db'
 import { useCurrentShop, useCurrentUser } from '@/lib/hooks'
@@ -62,6 +62,7 @@ export function ShopSettings() {
   const { updateShop, orders } = useDB()
   const [f, setF] = useState({ name: shop.name, description: shop.description, address: shop.address })
   const [theme, setTheme] = useState('classic')
+  if (tab === 'check') return <Navigate to="/seller/health" replace />
   const tabs = [{ key: 'base', label: '店铺信息' }, { key: 'check', label: '店铺体检' }, { key: 'returns', label: '退货宝' }, { key: 'level', label: '层级与权益' }, { key: 'live', label: '店铺直播' }, { key: 'content', label: '内容中心' }, { key: 'decorate', label: '店铺装修' }, { key: 'staff', label: '子账号管理' }, { key: 'assets', label: '素材中心' }, { key: 'rules', label: '平台规则' }, { key: 'agreement', label: '协议中心' }]
   return (
     <div>

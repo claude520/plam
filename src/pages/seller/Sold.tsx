@@ -288,7 +288,6 @@ export function SellerShip() {
   const [shipOf, setShipOf] = useState<Order[]>([])
   const [per, setPer] = useState(20)
   const [page, setPage] = useState(1)
-  const [more, setMore] = useState(false)
   const my = useMemo(() => orders.filter(o => o.shopId === shop.id), [orders, shop.id])
   const list = useMemo(() => my.filter(o => {
     if (tab === 'wait' ? o.status !== 'paid' : tab === 'done' ? !o.shippedAt : true) return false
@@ -334,13 +333,13 @@ export function SellerShip() {
           <input aria-label="收件人姓名" className="input-qn" placeholder="收件人姓名" value={f.name} onChange={e => setF({ ...f, name: e.target.value })} />
           <input aria-label="收件人手机" className="input-qn" placeholder="收件人手机" value={f.phone} onChange={e => setF({ ...f, phone: e.target.value })} />
           <select aria-label="地址" className="input-qn" value={f.country} onChange={e => setF({ ...f, country: e.target.value })}><option value="">地址（全部国家）</option>{COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.flag} {c.name}</option>)}</select>
-          {<>
+          <>
             <input aria-label="订单号" className="input-qn" placeholder="订单号" value={f.id} onChange={e => setF({ ...f, id: e.target.value })} />
             <input aria-label={tab === 'done' ? '运单号' : '商品ID'} className="input-qn" placeholder={tab === 'done' ? '运单号' : '商品ID'} value={f.pid} onChange={e => setF({ ...f, pid: e.target.value })} />
             <select aria-label="物流服务" className="input-qn" value={f.ship} onChange={e => setF({ ...f, ship: e.target.value })}><option value="">物流服务</option><option value="express">自己联系物流</option><option value="online">在线下单</option><option value="none">无需物流</option></select>
-          </>}
+          </>
           <select aria-label="其他" className="input-qn" value={f.other} onChange={e => setF({ ...f, other: e.target.value })}><option value="">其他</option><option value="live">直播订单</option><option value="flag">已插旗</option></select>
-          <div className="flex items-center gap-3 col-span-3 max-lg:col-span-1"><button onClick={() => { const e = { paid: ['', ''] as [string, string], name: '', phone: '', country: '', id: '', pid: '', ship: '', other: '' }; setF(e); setApplied(e); setChip('') }} className="text-ink-500">⌫ 清除条件</button><button onClick={() => { setApplied(f); setPage(1) }} className="btn-outline px-6">搜索</button>{tab === 'done' && <button onClick={() => setMore(m => !m)} className="text-ink-700">{more ? '⌃ 收起' : '⌄ 展开'}</button>}</div>
+          <div className="flex items-center gap-3 col-span-3 max-lg:col-span-1"><button onClick={() => { const e = { paid: ['', ''] as [string, string], name: '', phone: '', country: '', id: '', pid: '', ship: '', other: '' }; setF(e); setApplied(e); setChip('') }} className="text-ink-500">⌫ 清除条件</button><button onClick={() => { setApplied(f); setPage(1) }} className="btn-outline px-6">搜索</button></div>
         </div>
       </div>
       <div className="px-6 flex-1 space-y-3 pb-4">

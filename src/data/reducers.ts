@@ -67,15 +67,20 @@ export const reducers = {
   removeAdPlans: (s: DataState, ids: string[]): P => ({ adPlans: s.adPlans.filter(x => !ids.includes(x.id)) }),
   /** 广告展现：一次搜索结果页对多个计划各记 1 次 */
   adImpress: (s: DataState, planIds: string[], c: Ctx): P => ({ adPlans: s.adPlans.map(p => planIds.includes(p.id) ? bumpAd(p, c, 0, 0, 0, 0) : p) }),
-  /** 广告点击：按竞价结算价（不高于出价）从店主余额扣费，超出日预算或余额不足则不扣费并自动暂停 */
+  /**
+   * 广告点击：按竞价结算价（不高于出价）从店主余额扣费。
+   * 当日预算用完则当天下线（不扣费、次日自动恢复，最后一次点击只扣剩余预算）；余额不足才暂停计划。
+   */
   adClick: (s: DataState, planId: string, word: string, price: number, c: Ctx): P => {
     const plan = s.adPlans.find(p => p.id === planId)
     if (!plan || plan.status !== 'on') return {}
     const shop = s.shops.find(x => x.id === plan.shopId)
     const owner = s.users.find(u => u.id === shop?.ownerId)
-    const cost = +Math.max(AD_RESERVE, Math.min(adBid(plan, word), price || adBid(plan, word))).toFixed(2)
     const today = (plan.daily[c.now.slice(0, 10)] ?? [0, 0, 0, 0, 0])[2]
-    if (!owner || owner.balance < cost || today + cost > plan.dailyBudget) return { adPlans: s.adPlans.map(p => p.id === planId ? { ...p, status: 'paused' as const } : p) }
+    const left = +(plan.dailyBudget - today).toFixed(2)
+    if (left <= 0) return {}
+    const cost = +Math.min(left, Math.max(AD_RESERVE, Math.min(adBid(plan, word), price || adBid(plan, word)))).toFixed(2)
+    if (!owner || owner.balance < cost) return { adPlans: s.adPlans.map(p => p.id === planId ? { ...p, status: 'paused' as const } : p) }
     return { users: s.users.map(u => u.id === owner.id ? { ...u, balance: +(u.balance - cost).toFixed(2) } : u), adPlans: s.adPlans.map(p => p.id === planId ? bumpAd(p, c, 1, cost, 0, 0) : p) }
   },
   replyReview: (s: DataState, id: string, reply: string, c: Ctx): P => ({ reviews: s.reviews.map(r => r.id === id ? { ...r, reply, replyAt: c.now } : r) }),

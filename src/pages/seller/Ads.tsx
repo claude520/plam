@@ -123,7 +123,7 @@ export function KeywordAds() {
         <div className="rounded-lg bg-amber-50 p-3"><b>实际扣费 = 下一名综合得分 ÷ 您的质量分 + 0.01 元</b>（广义第二价格），不超过您的出价，最低 {AD_RESERVE} 元。例：您出价 1.00、质量分 8；下一名出价 1.20、质量分 5（得分 6.00），您的扣费 = 6.00 ÷ 8 + 0.01 = 0.76 元。</div>
         <p><b>智能出价</b>：系统在关键词建议价基础上按目标自动上浮（获取成交量 +20%、增加收藏加购 +10%）。<b>手动出价</b>：按您为每个关键词设置的价格竞价。</p>
         <p><b>匹配方式</b>：精准匹配仅在搜索词与关键词完全一致时展现；广泛匹配在搜索词包含关键词或关键词包含搜索词时展现。</p>
-        <p>当日花费达到日预算或账户余额不足时，计划自动暂停。成交按<b>末次点击归因、15 天累计周期</b>统计。店主本人搜索、点击自家广告不计展现与扣费。</p>
+        <p>当日花费达到日预算后，计划当天下线、次日自动恢复（最后一次点击只扣剩余预算）；账户余额不足时计划自动暂停，充值后需手动启用。成交按<b>末次点击归因、15 天累计周期</b>统计。店主本人搜索、点击自家广告不计展现与扣费。</p>
       </div></Modal>
     </div>
   )
@@ -185,7 +185,7 @@ function PlanEditor({ plan, onClose }: { plan: AdPlan | null; onClose: () => voi
             <div className="grid grid-cols-[100px_1fr] gap-4 items-center"><span className="text-ink-600">计划名称</span><input aria-label="计划名称" className="h-9 rounded-lg border border-ink-200 px-3 max-w-md" value={name} onChange={e => setName(e.target.value)} />
               <span className="text-ink-600">出价方式</span><div className="flex gap-3">{([['smart', '智能出价', '系统按目标自动调整出价'], ['manual', '手动出价', '按关键词设置的价格竞价']] as const).map(([k, l, d]) => <button key={k} onClick={() => setBidMode(k)} className={cls('flex-1 rounded-lg border-2 p-3 text-left', bidMode === k ? 'bg-[#4b5cff]/5' : 'border-ink-100')} style={bidMode === k ? { borderColor: BLUE } : undefined}><div className="font-medium">{l}</div><div className="text-xs text-ink-500 mt-0.5">{d}</div></button>)}</div>
               {bidMode === 'smart' && <><span className="text-ink-600">优化目标</span><div className="flex gap-2">{(Object.keys(GOALS) as AdPlan['goal'][]).map(g => <button key={g} onClick={() => setGoal(g)} className={cls('h-8 px-3 rounded-lg border', goal === g ? 'text-white' : 'border-ink-200')} style={goal === g ? { background: BLUE, borderColor: BLUE } : undefined}>{GOALS[g]}</button>)}</div></>}
-              <span className="text-ink-600">每日预算</span><div className="flex items-center gap-2"><input aria-label="每日预算" type="number" min={30} className="h-9 w-32 rounded-lg border border-ink-200 px-3 font-num" value={budget} onChange={e => setBudget(Number(e.target.value))} /> 元/天 <span className="text-xs text-ink-400">不低于 30 元，当日花费达到预算后自动暂停</span></div>
+              <span className="text-ink-600">每日预算</span><div className="flex items-center gap-2"><input aria-label="每日预算" type="number" min={30} className="h-9 w-32 rounded-lg border border-ink-200 px-3 font-num" value={budget} onChange={e => setBudget(Number(e.target.value))} /> 元/天 <span className="text-xs text-ink-400">不低于 30 元，当日花费达到预算后当天下线、次日恢复</span></div>
               <span className="text-ink-600">投放日期</span><div className="flex items-center gap-2"><input aria-label="开始日期" type="date" className="h-9 rounded-lg border border-ink-200 px-2" value={start} onChange={e => setStart(e.target.value)} /> 至 <input aria-label="结束日期" type="date" className="h-9 rounded-lg border border-ink-200 px-2" value={end} onChange={e => setEnd(e.target.value)} /></div>
               <span className="text-ink-600">分时折扣</span><span className="text-ink-500">0:00-24:00 · 100%</span>
             </div>

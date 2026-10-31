@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useSearchParams } from 'react-router-dom'
 import { Plus, Flame, Ticket, Percent, Layers, Clock, Rocket, Eye, MousePointerClick, Wallet, TrendingUp } from 'lucide-react'
 import { useDB, genId } from '@/store/db'
 import { useCurrentShop } from '@/lib/hooks'
@@ -122,6 +122,8 @@ export function Promotion() {
   const hot = products[0]
   const cost = Math.max(0, picked.length * daysN * 10 - (coupon ? 100 : 0))
   const titles: Record<string, string> = { center: '推广中心', all: '货品全站推', keyword: '关键词推广', crowd: '人群推广', content: '内容推广', union: '联盟推广', tools: '推广工具', data: '推广数据' }
+  // 关键词推广已独立为万相台页面（真实竞价）
+  if (tab === 'keyword') return <Navigate to="/seller/promotion/search" replace />
   if (tab === 'center') return (
     <div className="space-y-4">
       <div className="card overflow-hidden">
