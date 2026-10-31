@@ -15,7 +15,7 @@ type DropCtx<T extends unknown[]> = T extends [...infer R, Ctx] ? R : T
 type Actions = { [K in ReducerName]: (...args: DropCtx<DropFirst<Parameters<Reducers[K]>>>) => void }
 
 export interface DB extends DataState, Actions {
-  createOrder: (userId: string, items: Order['items'], shopId: string, address: Address, opts: { discount: number; freight: number; note?: string; couponId?: string; liveId?: string }) => Order
+  createOrder: (userId: string, items: Order['items'], shopId: string, address: Address, opts: { discount: number; freight: number; note?: string; couponId?: string; liveId?: string; adPlanId?: string }) => Order
   resetAll: () => void
   _version: number
   _remote: boolean

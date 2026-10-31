@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Users, Store, Package, FolderTree, FileText, RotateCcw, Star, Image, Ticket, Flag, Megaphone, CreditCard, Landmark, PieChart, ShieldCheck, ScrollText, Settings, Bell, Search, ChevronDown, LogOut, ChevronLeft, ArrowLeftRight, Menu, X, Radio } from 'lucide-react'
+import { LayoutDashboard, Users, Store, Package, FolderTree, FileText, RotateCcw, Star, Image, Ticket, Flag, Megaphone, CreditCard, Landmark, PieChart, ShieldCheck, ScrollText, Settings, Bell, Search, ChevronDown, LogOut, ChevronLeft, ArrowLeftRight, Menu, X, Radio, ShieldAlert } from 'lucide-react'
 import { LanguageMenu } from '@/components/LanguageMenu'
 import { useCurrentUser } from '@/lib/hooks'
 import { useDB } from '@/store/db'
@@ -10,7 +10,7 @@ import { cls } from '@/lib/format'
 
 export const ADMIN_MENU = [
   { title: '概览', items: [{ label: '数据看板', to: '/admin', icon: <LayoutDashboard className="w-4 h-4" /> }] },
-  { title: '用户与商家', items: [{ label: '用户管理', to: '/admin/users', icon: <Users className="w-4 h-4" /> }, { label: '商家管理', to: '/admin/shops', icon: <Store className="w-4 h-4" /> }] },
+  { title: '用户与商家', items: [{ label: '用户管理', to: '/admin/users', icon: <Users className="w-4 h-4" /> }, { label: '商家管理', to: '/admin/shops', icon: <Store className="w-4 h-4" /> }, { label: '违规处罚', to: '/admin/violations', icon: <ShieldAlert className="w-4 h-4" /> }] },
   { title: '商品', items: [{ label: '商品审核', to: '/admin/products', icon: <Package className="w-4 h-4" /> }, { label: '类目管理', to: '/admin/categories', icon: <FolderTree className="w-4 h-4" /> }] },
   { title: '交易', items: [{ label: '订单管理', to: '/admin/orders', icon: <FileText className="w-4 h-4" /> }, { label: '退款纠纷', to: '/admin/refunds', icon: <RotateCcw className="w-4 h-4" /> }, { label: '评价管理', to: '/admin/reviews', icon: <Star className="w-4 h-4" /> }, { label: '直播管理', to: '/admin/lives', icon: <Radio className="w-4 h-4" /> }] },
   { title: '营销与内容', items: [{ label: '首页轮播', to: '/admin/banners', icon: <Image className="w-4 h-4" /> }, { label: '优惠券', to: '/admin/coupons', icon: <Ticket className="w-4 h-4" /> }, { label: '营销活动', to: '/admin/campaigns', icon: <Flag className="w-4 h-4" /> }, { label: '公告管理', to: '/admin/announcements', icon: <Megaphone className="w-4 h-4" /> }] },

@@ -164,7 +164,7 @@ export function OrderDetail() {
           <div className="card p-5 text-sm">
             <div className="font-semibold mb-3 flex items-center gap-1.5"><Truck className="w-4 h-4 text-brand-500" />物流信息</div>
             {o.logistics ? <>
-              <div className="text-ink-600">{o.logistics.company} · 运单号 <span className="font-num">{o.logistics.no}</span></div>
+              <div className="text-ink-600">{o.shipType === 'none' ? '无需物流（卖家已直接交付）' : <>{o.logistics.company} · 运单号 <span className="font-num">{o.logistics.no}</span></>}</div>{o.deliverNote && <div className="mt-3 rounded-lg border border-brand-100 bg-brand-50/50 p-3 text-sm"><div className="text-xs text-ink-500 mb-1">卖家发货内容</div><div className="whitespace-pre-line break-all text-ink-900 select-all">{o.deliverNote}</div></div>}
               <ol className="mt-4 relative border-l border-ink-200 ml-2 space-y-4">{[...o.logistics.traces].reverse().map((t, i) => <li key={i} className="pl-4 relative"><span className={cls('absolute -left-[5px] top-1.5 w-2 h-2 rounded-full', i === 0 ? 'bg-brand-500 ring-4 ring-brand-100' : 'bg-ink-300')} /><div className={cls('text-xs', i === 0 ? 'text-ink-900' : 'text-ink-500')}>{t.text}</div><div className="text-[11px] text-ink-400 mt-0.5">{fmtDate(t.time)}</div></li>)}</ol>
             </> : <div className="text-ink-400">暂无物流信息</div>}
           </div>

@@ -1,17 +1,19 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ChevronDown, LayoutGrid, List, MapPin, Store } from 'lucide-react'
 import { useDB } from '@/store/db'
 import { ProductCard } from '@/components/ProductCard'
 import { Avatar, Empty, Img, Pagination } from '@/components/ui'
 import { cls, compact, money } from '@/lib/format'
+import { adAuction } from '@/data/reducers'
+import { trackClick, trackImpressions } from '@/lib/ads'
 
 export default function Search() {
   const [sp, setSp] = useSearchParams()
   const q = sp.get('q') ?? ''
   const cat = sp.get('cat') ?? ''
   const type = sp.get('type') ?? ''
-  const { products, categories, shops } = useDB()
+  const { products, categories, shops, adPlans, users } = useDB()
   const [sort, setSort] = useState<'default' | 'sales' | 'price-asc' | 'price-desc' | 'new'>('default')
   const [view, setView] = useState<'grid' | 'list'>('grid')
   const [filters, setFilters] = useState<{ free: boolean; tmall: boolean; min: string; max: string; shop?: string }>({ free: false, tmall: false, min: '', max: '' })
@@ -37,7 +39,12 @@ export default function Search() {
   const shopList = useMemo(() => shops.filter(s => s.status === 'open' && matchQ(s.name)), [shops, q])
   const pageSize = 20
   const pages = Math.max(1, Math.ceil(list.length / pageSize))
-  const rows = list.slice((page - 1) * pageSize, page * pageSize)
+  // 关键词推广：综合排名 = 出价 × 质量分，首页默认排序时展示前 4 个广告位（与自然结果去重）
+  const ads = useMemo(() => q && page === 1 && sort === 'default' && !filters.shop ? adAuction({ adPlans, products, shops, users }, q) : [], [q, page, sort, filters.shop, adPlans, products, shops, users])
+  const adKey = ads.map(a => a.planId + a.productId).join()
+  useEffect(() => { if (ads.length) trackImpressions(q, ads) }, [q, adKey]) // eslint-disable-line react-hooks/exhaustive-deps
+  const adIds = new Set(ads.map(a => a.productId))
+  const rows = list.filter(p => !adIds.has(p.id)).slice((page - 1) * pageSize, page * pageSize)
   const relatedCats = useMemo(() => {
     const ids = new Set(list.map(p => p.categoryId))
     return categories.filter(c => ids.has(c.id)).slice(0, 8)
@@ -100,7 +107,8 @@ export default function Search() {
         </div>
       </div>
 
-      {rows.length === 0 ? <div className="card"><Empty text={`没有找到与“${q || catNode?.name || ''}”相关的宝贝，换个关键词试试`} /></div> : view === 'grid' ? (
+      {ads.length > 0 && <div className="mb-3"><div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-3">{ads.map(a => { const p = products.find(x => x.id === a.productId)!; return <div key={a.productId} className="relative" onClickCapture={() => trackClick(a)}><ProductCard p={p} /><span className="absolute top-2 right-2 text-[10px] leading-4 px-1 rounded bg-black/40 text-white pointer-events-none">广告</span></div> })}</div></div>}
+      {rows.length === 0 && ads.length === 0 ? <div className="card"><Empty text={`没有找到与“${q || catNode?.name || ''}”相关的宝贝，换个关键词试试`} /></div> : view === 'grid' ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-3">{rows.map(p => <ProductCard key={p.id} p={p} />)}</div>
       ) : (
         <div className="space-y-3">

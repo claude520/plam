@@ -4,6 +4,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { MapPin, Plus, Check, ShieldCheck } from 'lucide-react'
 import { PayBox } from '@/components/PayBox'
 import { useDB, genId } from '@/store/db'
+import { adAttribution } from '@/lib/ads'
 import { useCurrentUser } from '@/lib/hooks'
 import { Img, Modal, Field, Steps } from '@/components/ui'
 import { cls, money, PAY_NAMES } from '@/lib/format'
@@ -45,7 +46,7 @@ export default function Checkout() {
 
   const submit = () => {
     if (!addr) return toast('请先添加收货地址', 'error')
-    const o = createOrder(user.id, items.map(it => ({ productId: it.p.id, title: it.p.title, image: it.p.images[0], skuText: Object.values(it.sku.attrs).join(' / '), price: it.sku.price, qty: it.qty })), shop.id, addr, { discount, freight, note, couponId: couponId || undefined, liveId: liveRoom?.id })
+    const o = createOrder(user.id, items.map(it => ({ productId: it.p.id, title: it.p.title, image: it.p.images[0], skuText: Object.values(it.sku.attrs).join(' / '), price: it.sku.price, qty: it.qty })), shop.id, addr, { discount, freight, note, couponId: couponId || undefined, liveId: liveRoom?.id, adPlanId: adAttribution(items.map(it => it.p.id)) })
     if (items[0].cartId) removeCart(items.map(it => it.cartId))
     setOrder(o); setStep(1); window.scrollTo(0, 0)
   }

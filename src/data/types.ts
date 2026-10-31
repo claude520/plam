@@ -141,6 +141,18 @@ export interface Order {
   payment?: { provider: string; tradeNo: string }
   logistics?: { company: string; no: string; traces: { time: string; text: string }[] }
   note?: string
+  /** 卖家备注旗帜 0 无 1 红 2 黄 3 绿 4 蓝 5 紫 */
+  flag?: number
+  /** 发货方式：express 自己联系物流 / online 在线下单 / none 无需物流（虚拟、无货源） */
+  shipType?: 'express' | 'online' | 'none'
+  /** 无需物流发货时给买家的发货内容（卡密、账号、下载链接等） */
+  deliverNote?: string
+  /** 延长收货天数 */
+  extendDays?: number
+  /** 卖家给买家的评价 */
+  rateBuyer?: { rating: 'good' | 'mid' | 'bad'; content: string; at: string }
+  /** 关键词推广成交归因 */
+  adPlanId?: string
   /** 来源直播间 */
   liveId?: string
 }
@@ -192,6 +204,7 @@ export interface Review {
   images: string[]
   createdAt: string
   reply?: string
+  replyAt?: string
   skuText?: string
 }
 
@@ -250,6 +263,60 @@ export interface Campaign {
   status: 'draft' | 'enrolling' | 'running' | 'ended'
   products: string[]
   discount: number
+}
+
+/** 店铺违规（平台处罚 → 商家申诉 → 平台审核） */
+export type ViolationStatus = 'pending' | 'appealing' | 'reviewing' | 'upheld' | 'revoked'
+export interface Violation {
+  id: string
+  shopId: string
+  /** 违规编号 */
+  code: string
+  /** 违规类型，如 消费者保障管理 / 虚假交易 / 延迟发货 */
+  type: string
+  /** 严重程度：一般违规 / 严重违规 / 市场管理 */
+  level: '一般违规' | '严重违规' | '市场管理'
+  /** 扣分，0 为无扣分 */
+  points: number
+  reason: string
+  /** 处罚影响 */
+  impact: string
+  /** 涉及订单 / 商品 */
+  orderIds?: string[]
+  productIds?: string[]
+  /** 预警：仅提醒不处罚 */
+  warning?: boolean
+  status: ViolationStatus
+  createdAt: string
+  /** 申诉截止 */
+  appealDeadline: string
+  appeal?: { text: string; images: string[]; at: string }
+  /** 平台审核结果 */
+  result?: { ok: boolean; text: string; at: string }
+  ignored?: boolean
+}
+
+/** 关键词推广计划（按点击扣费，花费从店主余额扣除） */
+export interface AdKeyword { word: string; bid: number; match: 'exact' | 'broad' }
+export interface AdPlan {
+  id: string
+  shopId: string
+  name: string
+  productIds: string[]
+  keywords: AdKeyword[]
+  /** smart 智能出价（系统按建议价出价）/ manual 手动出价 */
+  bidMode: 'smart' | 'manual'
+  /** 智能出价目标 */
+  goal: 'orders' | 'clicks' | 'cart'
+  dailyBudget: number
+  startAt: string
+  endAt: string
+  status: 'on' | 'paused'
+  createdAt: string
+  /** 累计数据 */
+  stats: { impressions: number; clicks: number; spend: number; orders: number; gmv: number; carts: number; favs: number }
+  /** 按日数据 yyyy-mm-dd → [展现, 点击, 花费, 成交笔数, 成交金额] */
+  daily: Record<string, [number, number, number, number, number]>
 }
 
 export interface AuditLog {
