@@ -7,6 +7,13 @@ const KEY = 'plam-ad-click:'
 const WINDOW = 15 * 864e5
 const seen = new Set<string>()
 
+/** 点击者标识：登录用户 id，未登录用浏览器级随机 id（用于无效点击过滤） */
+function clickerId(): string {
+  const uid = useSession.getState().userId
+  if (uid) return uid
+  try { let id = localStorage.getItem('plam-cid'); if (!id) { id = 'g-' + Math.random().toString(36).slice(2, 12); localStorage.setItem('plam-cid', id) } return id } catch { return 'anon' }
+}
+
 /** 当前登录用户是否为该计划所属店铺的店主（店主自己看/点自家广告不计费） */
 function isOwner(planId: string) {
   const s = useDB.getState()
@@ -27,7 +34,7 @@ export function trackImpressions(q: string, slots: AdSlot[]) {
 export function trackClick(slot: AdSlot) {
   try { localStorage.setItem(KEY + slot.productId, JSON.stringify({ planId: slot.planId, t: Date.now() })) } catch { /* 忽略 */ }
   if (isOwner(slot.planId)) return
-  useDB.getState().adClick(slot.planId, slot.word, slot.price)
+  useDB.getState().adClick(slot.planId, slot.word, slot.price, clickerId())
 }
 
 /** 下单时查找 15 天内点击过的推广计划 */

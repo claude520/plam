@@ -7,24 +7,34 @@ import { Avatar, Empty, Img, Pagination } from '@/components/ui'
 import { cls, compact, money } from '@/lib/format'
 import { adAuction } from '@/data/reducers'
 import { trackClick, trackImpressions } from '@/lib/ads'
+import { buildIndex, search, normalize } from '@/lib/search'
+import { interest, recommend, track } from '@/lib/reco'
+import { reportSearch, useProfile } from '@/lib/personal'
+import { useSession } from '@/store/session'
 
 export default function Search() {
   const [sp, setSp] = useSearchParams()
   const q = sp.get('q') ?? ''
   const cat = sp.get('cat') ?? ''
   const type = sp.get('type') ?? ''
-  const { products, categories, shops, adPlans, users } = useDB()
+  const noCorrect = sp.get('nc') === '1'
+  const { products, categories, shops, adPlans, users, orders } = useDB()
+  const uid = useSession(s => s.userId)
+  const prof = useProfile()
   const [sort, setSort] = useState<'default' | 'sales' | 'price-asc' | 'price-desc' | 'new'>('default')
   const [view, setView] = useState<'grid' | 'list'>('grid')
   const [filters, setFilters] = useState<{ free: boolean; tmall: boolean; min: string; max: string; shop?: string }>({ free: false, tmall: false, min: '', max: '' })
   const [page, setPage] = useState(1)
   const catNode = categories.find(c => c.id === cat)
-  const matchQ = (text: string) => !q || q.split(/\s+/).filter(Boolean).every(k => text.toLowerCase().includes(k.toLowerCase()))
+  const matchQ = (text: string) => !q || normalize(q).split(' ').filter(Boolean).every(k => normalize(text).includes(k))
+  const idx = useMemo(() => buildIndex(products.filter(p => p.status === 'on'), categories, shops), [products, categories, shops])
+  // 查询理解 + 相关性排序（分词、同义词、纠错、类目预测、个性化）
+  const engine = useMemo(() => (q ? search(q, idx, { personal: p => interest(p, prof), noCorrect }) : null), [q, idx, prof, noCorrect])
+  useEffect(() => { if (q) { track(uid, { t: 'search', q }); reportSearch(q) } }, [q]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const list = useMemo(() => {
-    let r = products.filter(p => p.status === 'on')
+    let r = engine ? engine.hits.map(h => h.p) : products.filter(p => p.status === 'on').sort((a, b) => interest(b, prof) - interest(a, prof) || b.sales - a.sales)
     if (cat) r = r.filter(p => p.categoryId === cat || p.categoryId.startsWith(cat + '-'))
-    if (q) r = r.filter(p => matchQ(p.title + ' ' + (shops.find(s => s.id === p.shopId)?.name ?? '') + ' ' + p.tags.join(' ')))
     if (filters.free) r = r.filter(p => p.freeShipping)
     if (filters.tmall) r = r.filter(p => shops.find(s => s.id === p.shopId)?.type === 'tmall')
     if (filters.min) r = r.filter(p => p.price >= Number(filters.min))
@@ -35,7 +45,7 @@ export default function Search() {
     if (sort === 'price-desc') r = [...r].sort((a, b) => b.price - a.price)
     if (sort === 'new') r = [...r].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     return r
-  }, [products, shops, q, cat, filters, sort])
+  }, [products, shops, engine, prof, cat, filters, sort])
   const shopList = useMemo(() => shops.filter(s => s.status === 'open' && matchQ(s.name)), [shops, q])
   const pageSize = 20
   const pages = Math.max(1, Math.ceil(list.length / pageSize))
@@ -49,6 +59,9 @@ export default function Search() {
     const ids = new Set(list.map(p => p.categoryId))
     return categories.filter(c => ids.has(c.id)).slice(0, 8)
   }, [list, categories])
+  const guess = useMemo(() => (list.length ? [] : recommend(products, orders, prof, { n: 10 }).map(r => r.p)), [list.length, products, orders, prof])
+  const predicted = engine?.predictedCat && !cat ? categories.find(c => c.id === engine.predictedCat) : undefined
+  const corrected = engine?.parsed.corrected
   const relatedShops = useMemo(() => { const ids = new Set(list.map(p => p.shopId)); return shops.filter(s => ids.has(s.id)).slice(0, 6) }, [list, shops])
 
   if (type === 'shop') {
@@ -82,6 +95,8 @@ export default function Search() {
           {q && <><span>›</span><span className="text-ink-900 font-medium">“{q}”</span></>}
           <span className="ml-auto">共 <b className="text-brand-500 font-num">{list.length}</b> 件相关宝贝</span>
         </div>
+        {corrected && <div className="mt-2 text-ink-600">已为您显示 <b className="text-brand-500">“{corrected}”</b> 的搜索结果，仍然搜索：<button onClick={() => setSp({ q, nc: '1' })} className="link">“{q}”</button></div>}
+        {predicted && <div className="mt-2 flex items-center gap-2"><span className="text-ink-400 w-16">猜你想找：</span><button onClick={() => { setSp({ q, cat: predicted.id }); setPage(1) }} className="px-2.5 h-6 rounded text-xs bg-brand-50 text-brand-600 hover:bg-brand-100">{categories.find(c => c.id === predicted.parentId)?.name ? `${categories.find(c => c.id === predicted.parentId)?.name} › ` : ''}{predicted.name}</button></div>}
         {relatedCats.length > 0 && (
           <div className="flex items-center gap-2 mt-2 flex-wrap"><span className="text-ink-400 w-16">相关分类：</span>{relatedCats.map(c => <button key={c.id} onClick={() => { setSp({ cat: c.id }); setPage(1) }} className={cls('px-2.5 h-6 rounded text-xs', cat === c.id ? 'bg-brand-500 text-white' : 'bg-ink-50 hover:bg-brand-50 hover:text-brand-500')}>{c.name}</button>)}</div>
         )}
@@ -108,7 +123,7 @@ export default function Search() {
       </div>
 
       {ads.length > 0 && <div className="mb-3"><div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-3">{ads.map(a => { const p = products.find(x => x.id === a.productId)!; return <div key={a.productId} className="relative" onClickCapture={() => trackClick(a)}><ProductCard p={p} /><span className="absolute top-2 right-2 text-[10px] leading-4 px-1 rounded bg-black/40 text-white pointer-events-none">广告</span></div> })}</div></div>}
-      {rows.length === 0 && ads.length === 0 ? <div className="card"><Empty text={`没有找到与“${q || catNode?.name || ''}”相关的宝贝，换个关键词试试`} /></div> : view === 'grid' ? (
+      {rows.length === 0 && ads.length === 0 ? <><div className="card"><Empty text={`没有找到与“${q || catNode?.name || ''}”相关的宝贝，换个关键词试试`} /></div>{guess.length > 0 && <div className="mt-4"><div className="font-semibold mb-3">猜你喜欢</div><div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-3">{guess.map(p => <ProductCard key={p.id} p={p} />)}</div></div>}</> : view === 'grid' ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-3">{rows.map(p => <ProductCard key={p.id} p={p} />)}</div>
       ) : (
         <div className="space-y-3">

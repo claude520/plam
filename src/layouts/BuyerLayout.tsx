@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Camera, ChevronDown, Heart, ShoppingCart, Store, User as UserIcon, MessageSquare, Home, Headphones, ArrowUp, Clock, LayoutGrid } from 'lucide-react'
 import { useDB } from '@/store/db'
@@ -7,6 +7,9 @@ import { useCurrentUser } from '@/lib/hooks'
 import { Badge } from '@/components/ui'
 import { LanguageMenu } from '@/components/LanguageMenu'
 import { cls } from '@/lib/format'
+import { buildIndex, suggest } from '@/lib/search'
+import { loadBehaviors } from '@/lib/reco'
+import { useHotSearch } from '@/lib/personal'
 
 export function Logo({ sub, className }: { sub?: string; className?: string }) {
   return (
@@ -65,18 +68,53 @@ export function SearchBar({ compactMode, sub }: { compactMode?: boolean; sub?: s
   const loc = useLocation()
   const [q, setQ] = useState(new URLSearchParams(loc.search).get('q') ?? '')
   const [type, setType] = useState<'宝贝' | '店铺'>('宝贝')
-  const hot = ['冰糖烤梨罐头', '降温保暖5折起', '下单赢AirPods5', '雪梨银耳', '雪梨', '冰糖烤梨']
-  const submit = (e: React.FormEvent) => { e.preventDefault(); nav(`/search?q=${encodeURIComponent(q.trim())}${type === '店铺' ? '&type=shop' : ''}`) }
+  const [open, setOpen] = useState(false)
+  const [active, setActive] = useState(-1)
+  const box = useRef<HTMLFormElement>(null)
+  const uid = useSession(s => s.userId)
+  const { products, categories, shops } = useDB()
+  const hotWords = useHotSearch()
+  const fallback = ['冰糖烤梨罐头', '降温保暖5折起', '下单赢AirPods5', '雪梨银耳', '雪梨', '冰糖烤梨']
+  const hot = hotWords.length >= 4 ? hotWords.slice(0, 6).map(h => h.q) : fallback
+  const idx = useMemo(() => buildIndex(products.filter(p => p.status === 'on'), categories, shops), [products, categories, shops])
+  const [hist, setHist] = useState<string[]>([])
+  // 下拉联想：输入时按前缀 / 包含匹配词典与热搜；空输入时显示历史搜索 + 热搜
+  const sugs = useMemo(() => (open && q.trim() ? suggest(q, idx, hotWords, 10) : []), [open, q, idx, hotWords])
+  useEffect(() => { if (open) setHist([...new Set(loadBehaviors(uid).filter(b => b.t === 'search' && b.q).map(b => b.q!))].slice(0, 8)) }, [open, uid])
+  useEffect(() => { setActive(-1) }, [q])
+  useEffect(() => { const h = (e: MouseEvent) => { if (!box.current?.contains(e.target as Node)) setOpen(false) }; document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h) }, [])
+  const go = (text: string, cat?: string) => { setQ(text); setOpen(false); nav(`/search?q=${encodeURIComponent(text.trim())}${cat ? `&cat=${cat}` : ''}${type === '店铺' ? '&type=shop' : ''}`) }
+  const submit = (e: React.FormEvent) => { e.preventDefault(); const s = sugs[active]; if (s) go(s.text, s.cat); else if (q.trim()) go(q); else go(sub ?? fallback[0]) }
+  const onKey = (e: React.KeyboardEvent) => {
+    if (!sugs.length) return
+    if (e.key === 'ArrowDown') { e.preventDefault(); setActive(a => (a + 1) % sugs.length) }
+    if (e.key === 'ArrowUp') { e.preventDefault(); setActive(a => (a <= 0 ? sugs.length - 1 : a - 1)) }
+    if (e.key === 'Escape') setOpen(false)
+  }
+  const catName = (id: string) => categories.find(c => c.id === id)?.name
   return (
-    <form onSubmit={submit} className={cls('flex-1', compactMode ? 'max-w-[420px]' : 'max-w-[640px]')} role="search">
+    <form ref={box} onSubmit={submit} className={cls('flex-1 relative', compactMode ? 'max-w-[420px]' : 'max-w-[640px]')} role="search">
       <div className="flex h-10 md:h-11 rounded-full border-2 border-brand-500 bg-white overflow-hidden focus-within:shadow-[0_0_0_4px_rgba(255,80,0,.12)] transition-shadow">
         {!compactMode && (
           <button type="button" onClick={() => setType(type === '宝贝' ? '店铺' : '宝贝')} className="px-3 text-sm text-ink-700 hidden sm:flex items-center gap-1 border-r border-ink-100 hover:bg-ink-50">{type}<ChevronDown className="w-3.5 h-3.5" /></button>
         )}
-        <input aria-label="搜索" value={q} onChange={e => setQ(e.target.value)} placeholder={sub ?? '冰糖烤梨罐头'} className="flex-1 px-3 text-sm outline-none placeholder:text-ink-400 min-w-0" />
+        <input aria-label="搜索" role="combobox" aria-expanded={open} aria-autocomplete="list" autoComplete="off" value={q} onFocus={() => setOpen(true)} onKeyDown={onKey} onChange={e => { setQ(e.target.value); setOpen(true) }} placeholder={sub ?? '冰糖烤梨罐头'} className="flex-1 px-3 text-sm outline-none placeholder:text-ink-400 min-w-0" />
         <button type="button" aria-label="图片搜索" className="px-2 text-ink-500 hover:text-brand-500 hidden sm:block"><Camera className="w-5 h-5" /></button>
         <button type="submit" className="bg-brand-500 hover:bg-brand-600 text-white px-4 md:px-7 font-semibold text-sm md:text-[15px] transition-colors">搜索</button>
       </div>
+      {open && (sugs.length > 0 || (!q.trim() && (hist.length > 0 || hot.length > 0))) && (
+        <div role="listbox" className="absolute left-0 right-0 top-full mt-1 z-50 bg-white rounded-xl shadow-float border border-ink-100 py-2 text-sm">
+          {q.trim() ? sugs.map((s, i) => (
+            <button type="button" role="option" aria-selected={i === active} key={s.text + (s.cat ?? '')} onMouseEnter={() => setActive(i)} onClick={() => go(s.text, s.cat)} className={cls('w-full text-left px-4 h-9 flex items-center gap-2', i === active && 'bg-ink-50')}>
+              {s.cat ? <><span className="text-ink-900">{s.text}</span><span className="text-xs text-ink-400">在 <b className="text-brand-500 font-normal">{catName(s.cat)}</b> 分类中搜索</span></> : <span className="text-ink-800 truncate">{s.text}</span>}
+              {s.hot && <span className="ml-auto text-[10px] px-1 rounded bg-brand-50 text-brand-500">热</span>}
+            </button>
+          )) : <div className="px-4 space-y-3">
+            {hist.length > 0 && <div><div className="flex items-center text-xs text-ink-400 mb-1.5">历史搜索<button type="button" onClick={() => { try { localStorage.setItem('plam-bhv:' + (uid || 'guest'), JSON.stringify(loadBehaviors(uid).filter(b => b.t !== 'search'))) } catch { /* 忽略 */ } setHist([]) }} className="ml-auto hover:text-brand-500">清空</button></div><div className="flex flex-wrap gap-2">{hist.map(h => <button type="button" key={h} onClick={() => go(h)} className="px-2.5 h-7 rounded-full bg-ink-50 hover:bg-brand-50 hover:text-brand-500 text-xs">{h}</button>)}</div></div>}
+            <div><div className="text-xs text-ink-400 mb-1.5">热门搜索</div><div className="grid grid-cols-2 gap-x-4">{hot.map((h, i) => <button type="button" key={h} onClick={() => go(h)} className="flex items-center gap-2 h-8 text-left hover:text-brand-500"><span className={cls('w-4 text-center font-num text-xs', i < 3 ? 'text-brand-500 font-bold' : 'text-ink-400')}>{i + 1}</span><span className="truncate">{h}</span></button>)}</div></div>
+          </div>}
+        </div>
+      )}
       {!compactMode && (
         <div className="hidden md:flex gap-3 mt-1.5 text-xs text-ink-500 overflow-hidden whitespace-nowrap">
           {hot.map((h, i) => <Link key={h} to={`/search?q=${encodeURIComponent(h)}`} className={cls('hover:text-brand-500', i < 4 && 'text-brand-500')}>{h}</Link>)}

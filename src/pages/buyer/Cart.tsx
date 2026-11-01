@@ -6,10 +6,16 @@ import { Img, Empty, Confirm } from '@/components/ui'
 import { cls, money } from '@/lib/format'
 import { toast } from '@/store/session'
 import { ProductCard } from '@/components/ProductCard'
+import { recommend } from '@/lib/reco'
+import { useProfile } from '@/lib/personal'
 
 export default function Cart() {
   const nav = useNavigate()
   const { cart, products, shops, updateCart, removeCart, toggleAllCart, toggleFavorite, coupons } = useDB()
+  const orders = useDB(s => s.orders)
+  const prof = useProfile()
+  // 购物车推荐：以加购商品为种子做协同 + 相似召回，排除已在购物车的宝贝
+  const recs = useMemo(() => recommend(products, orders, prof, { n: 8, exclude: cart.map(c => c.productId) }), [products, orders, prof, cart])
   const [tab, setTab] = useState<'all' | 'discount' | 'drop'>('all')
   const [q, setQ] = useState('')
   const [confirm, setConfirm] = useState<string[] | null>(null)
@@ -75,7 +81,7 @@ export default function Cart() {
               )
             })}
           </div>
-          <div className="mt-8"><div className="font-semibold text-lg mb-3">你可能还喜欢</div><div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">{products.filter(p => p.status === 'on').slice(20, 28).map(p => <ProductCard key={p.id} p={p} />)}</div></div>
+          <div className="mt-8"><div className="font-semibold text-lg mb-3">你可能还喜欢</div><div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">{recs.map(r => <ProductCard key={r.p.id} p={r.p} reason={r.reason} />)}</div></div>
         </div>
 
         <div className="card p-5 sticky top-4 max-lg:order-first">

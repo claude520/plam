@@ -7,23 +7,45 @@ import { Avatar, Empty, Field, Img, PageHeader, Stat, Switch, Tabs } from '@/com
 import { cls, compact, fmtDate, money, timeAgo } from '@/lib/format'
 import { toast } from '@/store/session'
 import { Bars, Donut, TrendArea, TrendLine, days, hours } from '@/components/Charts'
+import { answer, classify, INTENT_NAME, type Intent } from '@/lib/assistant'
 
 export function CustomerService() {
   const shop = useCurrentShop()
   const [sp] = useSearchParams()
   const tab = sp.get('tab') ?? 'chat'
-  const { messages, users, sendMessage, markRead, orders } = useDB()
+  const { messages, users, sendMessage, markRead, orders, products, coupons, updateShop } = useDB()
   const threads = useMemo(() => { const ids = [...new Set(messages.filter(m => m.shopId === shop.id).map(m => m.from === shop.id ? m.to : m.from))]; return ids.map(id => ({ id, u: users.find(u => u.id === id), last: messages.filter(m => m.shopId === shop.id && (m.from === id || m.to === id)).at(-1)!, unread: messages.filter(m => m.shopId === shop.id && m.from === id && !m.read).length })) }, [messages, shop.id, users])
   const [cur, setCur] = useState(threads[0]?.id ?? '')
   const [text, setText] = useState('')
   const [ai, setAi] = useState(true)
+  const [suggestion, setSuggestion] = useState<{ text: string; intent: Intent } | null>(null)
+  const [thinking, setThinking] = useState(false)
+  const [faq, setFaq] = useState(shop.ai?.faq ?? '')
+  const aiOn = shop.ai?.reply !== false
+  // 意图分布：对本店买家消息做意图识别，统计真实咨询结构
+  const buyerMsgs = messages.filter(m => m.shopId === shop.id && m.from !== shop.id)
+  const intents = Object.entries(buyerMsgs.reduce<Record<string, number>>((a, m) => { const k = INTENT_NAME[classify(m.content)]; a[k] = (a[k] ?? 0) + 1; return a }, {})).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
+  const aiMsgs = messages.filter(m => m.shopId === shop.id && m.ai)
+  const aiThreads = new Set(aiMsgs.map(m => m.to)).size
+  const handoff = buyerMsgs.filter(m => ['human', 'complaint'].includes(classify(m.content))).length
+  const suggest = async () => {
+    const last = [...list].reverse().find(m => m.from !== shop.id)
+    if (!last) return toast('买家还没有发消息', 'info')
+    setThinking(true)
+    const r = await answer(last.content, list.slice(-8).map(m => ({ role: m.from === shop.id ? 'assistant' as const : 'user' as const, content: m.content })), { shop, products: products.filter(p => p.shopId === shop.id && p.status === 'on'), orders: orders.filter(o => o.userId === cur && o.shopId === shop.id), coupons })
+    setThinking(false)
+    setSuggestion({ text: r.text, intent: r.intent })
+  }
   const list = messages.filter(m => m.shopId === shop.id && (m.from === cur || m.to === cur))
   const curUser = users.find(u => u.id === cur)
   const quick = ['亲，在的呢，有什么可以帮您？', '支持 7 天无理由退换哦～', '付款后 48 小时内发货', '尺码建议参考详情页尺码表', '感谢亲的支持，祝您购物愉快！']
   if (tab === 'ai') return (
     <div><PageHeader title="AI 生意管家 · 智能客服" desc="自动应答、意图识别与转人工策略配置。" />
-      <div className="grid grid-cols-[1fr_360px] gap-4"><div className="card p-5 space-y-4">{[['自动接待', '买家首次进线自动欢迎并推荐商品', true], ['智能应答', '基于知识库自动回复常见问题（物流/尺码/退换）', true], ['夜间托管', '22:00 - 08:00 由 AI 全权接待', false], ['催付提醒', '下单 15 分钟未付款自动提醒', true], ['差评拦截', '识别负面情绪自动转人工并发放补偿券', true]].map(([t, d, v]) => <div key={t as string} className="flex items-center gap-4 border border-ink-100 rounded-xl p-4"><Bot className="w-5 h-5 text-qn-500" /><div className="flex-1"><div className="font-medium">{t as string}</div><div className="text-xs text-ink-500 mt-0.5">{d as string}</div></div><Switch checked={v as boolean} onChange={() => toast('配置已保存')} /></div>)}</div>
-        <div className="card p-5"><div className="font-semibold mb-3">今日 AI 接待</div><div className="grid grid-cols-2 gap-3"><Stat label="AI 接待会话" value={128} /><Stat label="自动解决率" value="76%" accent="text-emerald-700" /><Stat label="平均响应" value="1.2s" /><Stat label="转人工" value={31} /></div><div className="mt-4"><Donut data={[{ name: '物流咨询', value: 38 }, { name: '尺码/规格', value: 24 }, { name: '退换货', value: 18 }, { name: '优惠活动', value: 12 }, { name: '其他', value: 8 }]} height={200} /></div></div></div></div>
+      <div className="grid grid-cols-[1fr_360px] max-lg:grid-cols-1 gap-4"><div className="card p-5 space-y-4">
+        <div className="flex items-center gap-4 border border-ink-100 rounded-xl p-4"><Bot className="w-5 h-5 text-qn-500" /><div className="flex-1"><div className="font-medium">智能应答（店小蜜）</div><div className="text-xs text-ink-500 mt-0.5">买家发消息后由 AI 自动回复：识别意图（物流 / 退换 / 尺码 / 优惠 / 库存 / 发票…），结合本店商品、优惠券与该买家订单作答；投诉或要求人工时自动转人工。</div></div><Switch checked={aiOn} onChange={v => { updateShop(shop.id, { ai: { ...shop.ai, reply: v } }); toast(v ? '店小蜜已开启' : '店小蜜已关闭') }} /></div>
+        <div className="border border-ink-100 rounded-xl p-4"><div className="font-medium">知识库补充</div><div className="text-xs text-ink-500 mt-0.5 mb-2">写下店铺专属规则（如发货地、售后电话、赠品说明），店小蜜回答时会参考。</div><textarea aria-label="知识库" className="input h-28 py-2" maxLength={800} value={faq} onChange={e => setFaq(e.target.value)} placeholder="例：所有订单从杭州仓发货，顺丰默认包邮；购买满 2 件送收纳袋。" /><div className="flex justify-end mt-2"><button onClick={() => { updateShop(shop.id, { ai: { reply: aiOn, ...shop.ai, faq: faq.trim() } }); toast('知识库已保存') }} className="btn-qn btn-sm">保存</button></div></div>
+      </div>
+        <div className="card p-5"><div className="font-semibold mb-3">店小蜜接待数据</div><div className="grid grid-cols-2 gap-3"><Stat label="AI 接待会话" value={aiThreads} /><Stat label="AI 回复消息" value={aiMsgs.length} accent="text-emerald-700" /><Stat label="买家咨询" value={buyerMsgs.length} /><Stat label="需转人工" value={handoff} /></div><div className="mt-4"><div className="text-xs text-ink-500 mb-1">咨询意图分布（实时识别）</div>{intents.length ? <Donut data={intents} height={200} /> : <div className="text-xs text-ink-400 py-8 text-center">暂无买家消息</div>}</div></div></div></div>
   )
   if (tab === 'kpi') return (
     <div><PageHeader title="客服绩效" desc="响应时长、满意度与转化。" />
@@ -41,14 +63,14 @@ export function CustomerService() {
         </div>
         <div className="flex flex-col">
           <div className="px-5 h-12 border-b border-ink-100 flex items-center gap-2 font-medium">{curUser?.nickname ?? '选择会话'}{curUser?.vip && <span className="tag-gold">88VIP</span>}</div>
-          <div className="flex-1 overflow-auto p-5 space-y-4 bg-ink-50/50">{list.map(m => <div key={m.id} className={cls('flex gap-2', m.from === shop.id ? 'flex-row-reverse' : '')}><Avatar src={m.from === shop.id ? shop.logo : curUser?.avatar} name="" size={32} /><div><div className={cls('max-w-md rounded-2xl px-3.5 py-2 text-sm', m.from === shop.id ? 'bg-qn-500 text-white rounded-tr-sm' : 'bg-white shadow-card rounded-tl-sm')}>{m.content}</div><div className="text-[10px] text-ink-400 mt-1">{timeAgo(m.time)}</div></div></div>)}</div>
+          <div className="flex-1 overflow-auto p-5 space-y-4 bg-ink-50/50">{list.map(m => <div key={m.id} className={cls('flex gap-2', m.from === shop.id ? 'flex-row-reverse' : '')}><Avatar src={m.from === shop.id ? shop.logo : curUser?.avatar} name="" size={32} /><div><div className={cls('max-w-md rounded-2xl px-3.5 py-2 text-sm', m.from === shop.id ? 'bg-qn-500 text-white rounded-tr-sm' : 'bg-white shadow-card rounded-tl-sm')}>{m.content}</div><div className={cls('text-[10px] text-ink-400 mt-1', m.from === shop.id && 'text-right')}>{m.ai && <span className="text-qn-600 mr-1">店小蜜 · AI</span>}{m.from !== shop.id && <span className="mr-1">[{INTENT_NAME[classify(m.content)]}]</span>}{timeAgo(m.time)}</div></div></div>)}</div>
           <div className="border-t border-ink-100 p-3">
             <div className="flex gap-1.5 mb-2 overflow-x-auto no-scrollbar">{quick.map(q => <button key={q} onClick={() => setText(q)} className="tag-blue h-6 px-2 whitespace-nowrap cursor-pointer">{q}</button>)}</div>
             <form onSubmit={e => { e.preventDefault(); if (!text.trim() || !cur) return; sendMessage({ from: shop.id, to: cur, shopId: shop.id, content: text.trim() }); setText('') }} className="flex gap-2"><input aria-label="回复" className="input-qn" value={text} onChange={e => setText(e.target.value)} placeholder="输入回复内容，Enter 发送" /><button type="submit" className="btn-qn"><Send className="w-4 h-4" />发送</button></form>
           </div>
         </div>
         <div className="border-l border-ink-100 p-4 text-sm overflow-auto">
-          {curUser ? <><div className="flex items-center gap-3"><Avatar src={curUser.avatar} name="" size={48} /><div><div className="font-medium">{curUser.nickname}</div><div className="text-xs text-ink-400">LV{curUser.level} · {curUser.vip ? '88VIP' : '普通会员'}</div></div></div><div className="divider my-3" /><div className="text-xs text-ink-500 mb-2">在本店订单</div>{orders.filter(o => o.userId === cur && o.shopId === shop.id).slice(0, 3).map(o => <div key={o.id} className="flex gap-2 py-2 border-b border-ink-100"><Img src={o.items[0].image} alt="" w={40} h={40} className="w-10 h-10 rounded" /><div className="min-w-0 text-xs"><div className="line-clamp-1">{o.items[0].title}</div><div className="text-ink-400 font-num">¥{money(o.payAmount)}</div></div></div>)}{orders.filter(o => o.userId === cur && o.shopId === shop.id).length === 0 && <div className="text-xs text-ink-400">暂无订单</div>}{ai && <div className="mt-4 rounded-xl bg-qn-50 p-3 text-xs"><div className="font-medium text-qn-700 flex items-center gap-1"><Bot className="w-3.5 h-3.5" />AI 建议回复</div><div className="mt-1 text-ink-700">亲～支持 2 台设备同时在线哦，下单后自动发货，有问题随时找我</div><button onClick={() => setText('亲～支持 2 台设备同时在线哦，下单后自动发货，有问题随时找我')} className="link mt-1">采用</button></div>}</> : <div className="text-ink-400">选择会话查看买家信息</div>}
+          {curUser ? <><div className="flex items-center gap-3"><Avatar src={curUser.avatar} name="" size={48} /><div><div className="font-medium">{curUser.nickname}</div><div className="text-xs text-ink-400">LV{curUser.level} · {curUser.vip ? '88VIP' : '普通会员'}</div></div></div><div className="divider my-3" /><div className="text-xs text-ink-500 mb-2">在本店订单</div>{orders.filter(o => o.userId === cur && o.shopId === shop.id).slice(0, 3).map(o => <div key={o.id} className="flex gap-2 py-2 border-b border-ink-100"><Img src={o.items[0].image} alt="" w={40} h={40} className="w-10 h-10 rounded" /><div className="min-w-0 text-xs"><div className="line-clamp-1">{o.items[0].title}</div><div className="text-ink-400 font-num">¥{money(o.payAmount)}</div></div></div>)}{orders.filter(o => o.userId === cur && o.shopId === shop.id).length === 0 && <div className="text-xs text-ink-400">暂无订单</div>}{ai && <div className="mt-4 rounded-xl bg-qn-50 p-3 text-xs"><div className="font-medium text-qn-700 flex items-center gap-1"><Bot className="w-3.5 h-3.5" />AI 建议回复<button onClick={suggest} disabled={thinking} className="link ml-auto">{thinking ? '生成中…' : suggestion ? '换一个' : '生成'}</button></div>{suggestion ? <><div className="mt-1 text-ink-500">识别意图：{INTENT_NAME[suggestion.intent]}</div><div className="mt-1 text-ink-700">{suggestion.text}</div><button onClick={() => setText(suggestion.text)} className="link mt-1">采用</button></> : <div className="mt-1 text-ink-400">根据买家最新一条消息、本店商品和订单生成回复草稿</div>}</div>}</> : <div className="text-ink-400">选择会话查看买家信息</div>}
         </div>
       </div>
     </div>

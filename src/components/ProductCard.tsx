@@ -4,7 +4,7 @@ import { Img } from '@/components/ui'
 import { compact, money } from '@/lib/format'
 import { useDB } from '@/store/db'
 
-export function ProductCard({ p, size = 'md', eager }: { p: Product; size?: 'sm' | 'md'; eager?: boolean }) {
+export function ProductCard({ p, size = 'md', eager, reason }: { p: Product; size?: 'sm' | 'md'; eager?: boolean; reason?: string }) {
   const shop = useDB(s => s.shops.find(x => x.id === p.shopId))
   return (
     <Link to={`/item/${p.id}`} className="group card overflow-hidden hover:shadow-float transition-shadow block">
@@ -25,7 +25,8 @@ export function ProductCard({ p, size = 'md', eager }: { p: Product; size?: 'sm'
           <span className="truncate">{shop?.name}</span>
           <span className="whitespace-nowrap shrink-0">{compact(p.sales)}人付款</span>
         </div>
-        {p.tags.length > 1 && <div className="flex gap-1 mt-1.5 flex-wrap">{p.tags.slice(1, 3).map(t => <span key={t} className="tag-red">{t}</span>)}</div>}
+        {reason && <div className="mt-1.5 text-[11px] text-brand-500 bg-brand-50 rounded px-1.5 py-0.5 truncate" title="推荐理由">{reason}</div>}
+        {!reason && p.tags.length > 1 && <div className="flex gap-1 mt-1.5 flex-wrap">{p.tags.slice(1, 3).map(t => <span key={t} className="tag-red">{t}</span>)}</div>}
       </div>
     </Link>
   )

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { defaultCountry, fmtAddr, fmtPhone } from '@/lib/address'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Heart, Trash2, Clock, Store, Ticket, Plus, MapPin, Shield, Smartphone, Lock, MessageSquare, FileText, Star, Send } from 'lucide-react'
@@ -10,6 +10,7 @@ import { toast } from '@/store/session'
 import { AddressModal } from './Checkout'
 import type { Address, Refund } from '@/data/types'
 import { ProductCard } from '@/components/ProductCard'
+import { answer } from '@/lib/assistant'
 
 export function Favorites() {
   const { favorites, products, toggleFavorite, shops } = useDB()
@@ -187,10 +188,27 @@ export function Reviews() {
 
 export function Messages() {
   const user = useCurrentUser()!
-  const { messages, shops, sendMessage } = useDB()
-  const threads = useMemo(() => { const ids = [...new Set(messages.filter(m => m.from === user.id || m.to === user.id).map(m => m.shopId))]; return ids.length ? ids : ['s6'] }, [messages, user.id])
-  const [cur, setCur] = useState(threads[0])
+  const { messages, shops, products, orders, coupons, sendMessage } = useDB()
+  const [sp] = useSearchParams()
+  const want = sp.get('shop') ?? ''
+  const item = products.find(p => p.id === sp.get('item'))
+  const threads = useMemo(() => { const ids = [...new Set([...(want ? [want] : []), ...messages.filter(m => m.from === user.id || m.to === user.id).map(m => m.shopId)])].filter(id => shops.some(s => s.id === id)); return ids.length ? ids : ['s6'] }, [messages, user.id, want, shops])
+  const [cur, setCur] = useState(want && shops.some(s => s.id === want) ? want : threads[0])
   const [text, setText] = useState('')
+  const [typing, setTyping] = useState(false)
+  const end = useRef<HTMLDivElement>(null)
+  useEffect(() => { end.current?.scrollIntoView({ block: 'end' }) }, [cur, messages.length, typing])
+  // 发送后由店小蜜（AI 客服）自动应答：意图识别 + 店铺 / 商品 / 订单上下文；投诉或要求人工时转人工
+  const send = async (content: string) => {
+    sendMessage({ from: user.id, to: cur, shopId: cur, content })
+    const s = shops.find(x => x.id === cur)
+    if (!s || s.ai?.reply === false) return
+    setTyping(true)
+    const history = messages.filter(m => m.shopId === cur && (m.from === user.id || m.to === user.id)).slice(-8).map(m => ({ role: (m.from === user.id ? 'user' : 'assistant') as 'user' | 'assistant', content: m.content }))
+    const r = await answer(content, history, { shop: s, products: products.filter(p => p.shopId === s.id && p.status === 'on'), orders: orders.filter(o => o.userId === user.id && o.shopId === s.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt)), coupons, item: item?.shopId === s.id ? item : undefined })
+    setTyping(false)
+    useDB.getState().sendMessage({ from: s.id, to: user.id, shopId: s.id, content: r.text, ai: true })
+  }
   const list = messages.filter(m => m.shopId === cur && (m.from === user.id || m.to === user.id))
   const shop = shops.find(s => s.id === cur)!
   const system = [{ t: '交易物流', d: '您的订单已签收，期待您的评价', time: '10:24' }, { t: '活动消息', d: '双11开门红：叠券低至7.2折起，速来抢购', time: '昨天' }, { t: '系统通知', d: '支付系统将于 10月30日 凌晨升级', time: '2天前' }]
@@ -203,12 +221,16 @@ export function Messages() {
         {threads.map(id => { const s = shops.find(x => x.id === id)!; return <button key={id} onClick={() => setCur(id)} className={cls('w-full text-left px-4 py-3 flex items-center gap-3', cur === id ? 'bg-brand-50' : 'hover:bg-ink-50')}><Avatar src={s.logo} name={s.name} size={36} /><div className="min-w-0"><div className="text-sm font-medium truncate">{s.name}</div><div className="text-xs text-ink-400 truncate">{messages.filter(m => m.shopId === id).at(-1)?.content ?? '暂无消息'}</div></div></button> })}
       </div>
       <div className="flex flex-col">
-        <div className="px-5 h-12 border-b border-ink-100 flex items-center font-medium">{shop.name}</div>
+        <div className="px-5 h-12 border-b border-ink-100 flex items-center font-medium">{shop.name}{shop.ai?.reply !== false && <span className="ml-2 tag-blue">店小蜜在线</span>}</div>
+        {list.length === 0 && <div className="px-4 pt-3 flex gap-2 flex-wrap">{['什么时候发货', '支持七天无理由吗', '有优惠券吗', '还有货吗'].map(q => <button key={q} onClick={() => send(q)} className="h-7 px-3 rounded-full border border-ink-200 text-xs hover:border-brand-500 hover:text-brand-500">{q}</button>)}</div>}
         <div className="flex-1 overflow-auto p-5 space-y-4 bg-ink-50/50">
-          {list.map(m => <div key={m.id} className={cls('flex gap-2', m.from === user.id ? 'flex-row-reverse' : '')}><Avatar src={m.from === user.id ? user.avatar : shop.logo} name="" size={32} /><div><div className={cls('max-w-md rounded-2xl px-3.5 py-2 text-sm', m.from === user.id ? 'bg-brand-500 text-white rounded-tr-sm' : 'bg-white rounded-tl-sm shadow-card')}>{m.content}</div><div className="text-[10px] text-ink-400 mt-1">{timeAgo(m.time)}</div></div></div>)}
+          {list.map(m => <div key={m.id} className={cls('flex gap-2', m.from === user.id ? 'flex-row-reverse' : '')}><Avatar src={m.from === user.id ? user.avatar : shop.logo} name="" size={32} /><div><div className={cls('max-w-md rounded-2xl px-3.5 py-2 text-sm', m.from === user.id ? 'bg-brand-500 text-white rounded-tr-sm' : 'bg-white rounded-tl-sm shadow-card')}>{m.content}</div><div className="text-[10px] text-ink-400 mt-1">{m.ai && <span className="text-qn-600 mr-1">店小蜜 · AI</span>}{timeAgo(m.time)}</div></div></div>)}
+          {typing && <div className="flex gap-2"><Avatar src={shop.logo} name="" size={32} /><div className="bg-white rounded-2xl rounded-tl-sm shadow-card px-3.5 py-2 text-sm text-ink-400">店小蜜正在输入…</div></div>}
+          <div ref={end} />
           {list.length === 0 && <div className="text-center text-ink-400 text-sm py-10">开始和店铺聊天吧</div>}
+          {item && item.shopId === cur && <div className="mx-auto max-w-sm flex gap-3 items-center bg-white rounded-xl p-2.5 shadow-card"><Img src={item.images[0]} alt="" w={48} h={48} className="w-12 h-12 rounded" /><div className="min-w-0 flex-1"><div className="text-xs line-clamp-1">{item.title}</div><div className="price text-sm">¥{money(item.price)}</div></div><button onClick={() => send(`我想咨询一下这个宝贝：${item.title.slice(0, 30)}`)} className="btn-outline btn-sm shrink-0">发送宝贝</button></div>}
         </div>
-        <form onSubmit={e => { e.preventDefault(); if (!text.trim()) return; sendMessage({ from: user.id, to: cur, shopId: cur, content: text.trim() }); setText('') }} className="p-3 border-t border-ink-100 flex gap-2"><input aria-label="消息" className="input" value={text} onChange={e => setText(e.target.value)} placeholder="输入消息…" /><button className="btn-primary" type="submit"><Send className="w-4 h-4" />发送</button></form>
+        <form onSubmit={e => { e.preventDefault(); if (!text.trim()) return; send(text.trim()); setText('') }} className="p-3 border-t border-ink-100 flex gap-2"><input aria-label="消息" className="input" value={text} onChange={e => setText(e.target.value)} placeholder="输入消息…" /><button className="btn-primary" type="submit"><Send className="w-4 h-4" />发送</button></form>
       </div>
     </div>
   )

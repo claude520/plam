@@ -110,6 +110,8 @@ export interface Shop {
   createdAt: string
   description: string
   address: string
+  /** 店小蜜（AI 客服）配置；未设置时默认开启智能应答 */
+  ai?: { reply: boolean; night?: boolean; faq?: string }
 }
 
 export type OrderStatus = 'unpaid' | 'paid' | 'shipped' | 'received' | 'done' | 'closed' | 'refunding'
@@ -314,7 +316,9 @@ export interface AdPlan {
   status: 'on' | 'paused'
   createdAt: string
   /** 累计数据 */
-  stats: { impressions: number; clicks: number; spend: number; orders: number; gmv: number; carts: number; favs: number }
+  stats: { impressions: number; clicks: number; spend: number; orders: number; gmv: number; carts: number; favs: number; invalidClicks?: number }
+  /** 反作弊：访客近 24 小时的点击记录（"毫秒时间戳|关键词"），用于过滤重复 / 高频点击 */
+  guard?: Record<string, string[]>
   /** 按日数据 yyyy-mm-dd → [展现, 点击, 花费, 成交笔数, 成交金额] */
   daily: Record<string, [number, number, number, number, number]>
 }
@@ -336,6 +340,8 @@ export interface Message {
   content: string
   time: string
   read: boolean
+  /** 由店小蜜（AI 客服）自动回复 */
+  ai?: boolean
 }
 
 export interface AdminRole {

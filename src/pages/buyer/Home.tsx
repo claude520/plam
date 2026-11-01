@@ -7,6 +7,8 @@ import { Logo, SearchBar } from '@/layouts/BuyerLayout'
 import { ProductCard } from '@/components/ProductCard'
 import { Img, Avatar } from '@/components/ui'
 import { money, cls } from '@/lib/format'
+import { recommend } from '@/lib/reco'
+import { useProfile } from '@/lib/personal'
 
 function Countdown() {
   const [t, setT] = useState(44 * 3600 + 27 * 60 + 19)
@@ -19,6 +21,7 @@ function Countdown() {
 export default function Home() {
   const user = useCurrentUser()
   const { products, categories, banners, shops, cart, footprints, favorites, orders, campaigns } = useDB()
+  const prof = useProfile()
   const heroBanners = banners.filter(b => b.position === 'home-hero' && b.status === 'on').sort((a, b) => a.sort - b.sort)
   const [slide, setSlide] = useState(0)
   useEffect(() => { let i: number | undefined; const t = window.setTimeout(() => { i = window.setInterval(() => setSlide(s => (s + 1) % Math.max(1, heroBanners.length)), 5000) }, 12000); return () => { clearTimeout(t); if (i) clearInterval(i) } }, [heroBanners.length])
@@ -41,11 +44,10 @@ export default function Home() {
   }, [])
   useEffect(() => { setVisible(isMobile ? 8 : 30) }, [feedTab, seedShift, isMobile])
   const feed = useMemo(() => {
+    // 猜你喜欢：个性化推荐（兴趣画像 + 协同过滤 + 多样性打散）；频道 tab 在该类目内按个人兴趣排序
     const base = feedTab === '猜你喜欢' ? onSale : onSale.filter(p => p.categoryId.startsWith(feedMap[feedTab] + '-'))
-    const arr = [...base]
-    for (let i = arr.length - 1; i > 0; i--) { const j = (i * 7 + seedShift * 13) % (i + 1); [arr[i], arr[j]] = [arr[j], arr[i]] }
-    return arr.slice(0, 60)
-  }, [onSale, feedTab, seedShift])
+    return recommend(base, orders, prof, { n: 60, seed: seedShift + 1 })
+  }, [onSale, orders, prof, feedTab, seedShift])
   const pick = (ids: number[]) => ids.map(i => onSale[i % onSale.length]).filter(Boolean)
   const pendingCount = orders.filter(o => o.userId === user?.id && o.status === 'unpaid').length
   const running = campaigns.filter(c => c.status === 'running')
@@ -223,7 +225,7 @@ export default function Home() {
           </div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-3 pb-6">
-          {feed.slice(0, visible).map((p, i) => <ProductCard key={p.id} p={p} eager={!isMobile && i < 5} />)}
+          {feed.slice(0, visible).map(({ p, reason }, i) => <ProductCard key={p.id} p={p} reason={feedTab === '猜你喜欢' ? reason : undefined} eager={!isMobile && i < 5} />)}
         </div>
         <div ref={sentinel} className="h-px" />
         <div className="text-center text-ink-400 text-sm pb-4">— 已经到底啦，去搜索看看更多宝贝 —</div>

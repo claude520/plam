@@ -7,6 +7,10 @@ import { Avatar, Img, Rating, Tabs, Empty } from '@/components/ui'
 import { ProductCard } from '@/components/ProductCard'
 import { cls, compact, money, fmtDate } from '@/lib/format'
 import { toast } from '@/store/session'
+import { alsoBought, recommend, similarTo } from '@/lib/reco'
+import { useProfile } from '@/lib/personal'
+import { reviewRisks, RISKY } from '@/lib/risk'
+import { reviewTags } from '@/lib/nlp'
 
 export default function Item() {
   const { id } = useParams()
@@ -16,6 +20,8 @@ export default function Item() {
   const shop = useShop(p?.shopId)
   const catName = useCategoryName(p?.categoryId)
   const user = useCurrentUser()
+  const orders = useDB(s => s.orders)
+  const prof = useProfile()
   const { products, reviews, users, favorites, toggleFavorite, addToCart, addFootprint, followedShops, toggleFollowShop, coupons, myCoupons, claimCoupon } = useDB()
   const [img, setImg] = useState(0)
   const [sel, setSel] = useState<Record<string, string>>({})
@@ -28,9 +34,19 @@ export default function Item() {
   const liveRoom = useDB(s => s.lives).find(l => l.id === liveId)
   const livePrice = liveRoom && p ? liveRoom.livePrices[p.id] : undefined
   const price = livePrice && livePrice < (sku?.price ?? p?.price ?? 0) ? livePrice : (sku?.price ?? p?.price ?? 0)
-  const prodReviews = useMemo(() => reviews.filter(r => r.productId === p?.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt)), [reviews, p])
+  const allReviews = useMemo(() => reviews.filter(r => r.productId === p?.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt)), [reviews, p])
+  const shops = useDB(s => s.shops)
+  // 疑似刷评的评价默认折叠（与淘宝「部分评价已折叠」一致），印象标签由评价文本的属性-情感分析生成
+  const risks = useMemo(() => reviewRisks(reviews, products, shops, users), [reviews, products, shops, users])
+  const prodReviews = allReviews.filter(r => (risks.get(r.id)?.score ?? 0) < RISKY)
+  const folded = allReviews.filter(r => (risks.get(r.id)?.score ?? 0) >= RISKY)
+  const [showFolded, setShowFolded] = useState(false)
+  const tags = useMemo(() => reviewTags(prodReviews), [prodReviews.length, p?.id]) // eslint-disable-line react-hooks/exhaustive-deps
   const shopProducts = useMemo(() => products.filter(x => x.shopId === p?.shopId && x.id !== p?.id && x.status === 'on').slice(0, 6), [products, p])
-  const similar = useMemo(() => products.filter(x => x.categoryId === p?.categoryId && x.id !== p?.id && x.status === 'on').slice(0, 5), [products, p])
+  // 看了又看：标题 TF-IDF 相似 + 协同过滤；买了又买：同用户共同购买；猜你喜欢：以当前宝贝为上下文的个性化推荐
+  const similar = useMemo(() => (p ? similarTo(p, products, orders, 5) : []), [products, orders, p])
+  const bought = useMemo(() => (p ? alsoBought(p, products, orders, 5) : []), [products, orders, p])
+  const guess = useMemo(() => (p ? recommend(products, orders, prof, { n: 10, context: p, exclude: [p.id, ...similar.map(x => x.id)] }) : []), [products, orders, prof, p, similar])
   const shopCoupons = coupons.filter(c => (c.shopId === p?.shopId || !c.shopId) && c.status === 'active')
   if (!p || !shop) return <div className="container-x py-20"><Empty text="宝贝不存在或已下架" /></div>
   const fav = favorites.includes(p.id)
@@ -98,7 +114,7 @@ export default function Item() {
             {[['宝贝描述', shop.score.desc], ['卖家服务', shop.score.service], ['物流服务', shop.score.logistics]].map(([l, v]) => <div key={l as string} className="flex items-center justify-between"><span className="text-ink-500">{l}</span><span className="font-num text-ink-800">{(v as number).toFixed(1)} <span className="text-brand-500">高</span></span></div>)}
           </div>
           <div className="mt-4 flex gap-2"><Link to={`/shop/${shop.id}`} className="btn-outline btn-sm flex-1"><Store className="w-3.5 h-3.5" />进店逛逛</Link><button onClick={() => { toggleFollowShop(shop.id); toast(followed ? '已取消关注' : '关注成功') }} className={cls('btn-sm flex-1', followed ? 'btn-ghost' : 'btn-primary')}>{followed ? '已关注' : '+ 关注'}</button></div>
-          <button onClick={() => toast('已为您接通客服，请稍候')} className="btn-ghost btn-sm w-full mt-2 text-qn-600"><MessageCircle className="w-3.5 h-3.5" />联系客服</button>
+          <button onClick={() => (user ? nav(`/my/messages?shop=${shop.id}&item=${p.id}`) : nav('/login'))} className="btn-ghost btn-sm w-full mt-2 text-qn-600"><MessageCircle className="w-3.5 h-3.5" />联系客服</button>
           <div className="mt-5 text-sm font-semibold">店铺推荐</div>
           <div className="grid grid-cols-2 gap-2 mt-2">
             {shopProducts.slice(0, 4).map(x => <Link key={x.id} to={`/item/${x.id}`} className="group"><div className="aspect-square rounded-lg overflow-hidden"><Img src={x.images[0]} alt={x.title} w={100} h={100} className="w-full h-full group-hover:scale-105 transition-transform" /></div><div className="price text-xs mt-1">¥{money(x.price, 0)}</div></Link>)}
@@ -113,7 +129,7 @@ export default function Item() {
           <div className="space-y-3">{similar.map(x => <Link key={x.id} to={`/item/${x.id}`} className="block group"><div className="aspect-square rounded-lg overflow-hidden"><Img src={x.images[0]} alt={x.title} w={180} h={180} className="w-full h-full group-hover:scale-105 transition-transform" /></div><div className="text-xs line-clamp-2 mt-1 text-ink-700">{x.title}</div><div className="price text-sm">¥{money(x.price)}</div></Link>)}</div>
         </div>
         <div className="card">
-          <div className="px-5"><Tabs items={[{ key: 'detail', label: '宝贝详情' }, { key: 'reviews', label: '累计评价', count: prodReviews.length }, { key: 'params', label: '规格参数' }]} value={tab} onChange={setTab} size="lg" /></div>
+          <div className="px-5"><Tabs items={[{ key: 'detail', label: '宝贝详情' }, { key: 'reviews', label: '累计评价', count: allReviews.length }, { key: 'params', label: '规格参数' }]} value={tab} onChange={setTab} size="lg" /></div>
           {tab === 'detail' && (
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-sm text-ink-600 mb-6">
@@ -134,11 +150,11 @@ export default function Item() {
               <div className="flex items-center gap-8 mb-6 bg-ink-50 rounded-xl p-4">
                 <div className="text-center"><div className="text-4xl font-num font-bold text-brand-500">{p.rating.toFixed(1)}</div><div className="text-xs text-ink-500 mt-1">综合评分</div></div>
                 <div className="flex-1 space-y-1">{[5, 4, 3].map(n => { const c = prodReviews.filter(r => r.rating === n).length; return <div key={n} className="flex items-center gap-2 text-xs"><span className="w-8">{n}星</span><div className="flex-1 h-2 bg-ink-200 rounded-full overflow-hidden"><div className="h-full bg-brand-500" style={{ width: `${prodReviews.length ? (c / prodReviews.length) * 100 : 0}%` }} /></div><span className="w-8 text-ink-400">{c}</span></div> })}</div>
-                <div className="flex gap-2 flex-wrap max-w-xs">{['质量很好', '物流快', '性价比高', '包装精美', '客服态度好'].map(t => <span key={t} className="tag-red h-6 px-2">{t}</span>)}</div>
+                <div className="max-w-xs"><div className="text-xs text-ink-500 mb-1.5">大家都在说</div><div className="flex gap-2 flex-wrap">{tags.map(t => <span key={t.label} className={cls('h-6 px-2 inline-flex items-center rounded text-xs', t.positive ? 'tag-red' : 'bg-ink-100 text-ink-600')}>{t.label}({t.count})</span>)}{!tags.length && <span className="text-xs text-ink-400">暂无</span>}</div></div>
               </div>
               {prodReviews.length === 0 && <Empty text="暂无评价" icon={<Star className="w-6 h-6" />} />}
               <div className="divide-y divide-ink-100">
-                {prodReviews.map(r => { const u = users.find(x => x.id === r.userId); return (
+                {[...prodReviews, ...(showFolded ? folded : [])].map(r => { const u = users.find(x => x.id === r.userId); return (
                   <div key={r.id} className="py-5 flex gap-4">
                     <Avatar src={u?.avatar} name={u?.nickname ?? ''} size={40} />
                     <div className="flex-1">
@@ -151,6 +167,7 @@ export default function Item() {
                   </div>
                 ) })}
               </div>
+              {folded.length > 0 && <button onClick={() => setShowFolded(v => !v)} className="mt-3 w-full text-center text-xs text-ink-500 hover:text-brand-500 py-2 bg-ink-50 rounded-lg">{showFolded ? '收起已折叠评价' : `已折叠 ${folded.length} 条疑似异常评价（如店铺自评、内容雷同、集中刷评），点击查看`}</button>}
             </div>
           )}
           {tab === 'params' && (
@@ -159,7 +176,8 @@ export default function Item() {
         </div>
       </div>
 
-      <div className="mt-6"><div className="font-semibold text-lg mb-3">猜你喜欢</div><div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-3 mobile-pb">{products.filter(x => x.id !== p.id && x.status === 'on').slice(0, 10).map(x => <ProductCard key={x.id} p={x} />)}</div></div>
+      {bought.length > 0 && <div className="mt-6"><div className="font-semibold text-lg mb-3">买了该宝贝的人还买了</div><div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-3">{bought.map(x => <ProductCard key={x.id} p={x} />)}</div></div>}
+      <div className="mt-6"><div className="font-semibold text-lg mb-3">猜你喜欢</div><div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-3 mobile-pb">{guess.map(r => <ProductCard key={r.p.id} p={r.p} reason={r.reason} />)}</div></div>
     </div>
   )
 }

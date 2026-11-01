@@ -9,6 +9,8 @@
 // POST /api/live/:id/media  { seq, chunk?, frame? } 主播推流（webm 分片 + JPEG 关键帧）
 // POST /api/asset { data } / GET /api/asset/:id          商品图片资源（发布页上传）
 // POST /api/translate { to, texts }                       多语言翻译（Workers AI + D1 缓存）
+// GET  /api/hot / POST /api/hot { q }                      热搜词统计（近 7 天）
+// POST /api/assistant { system, messages }                 AI 客服 / 智能助手（Workers AI）
 import { reducers, COLLECTIONS, type DataState, type ReducerName } from '../../src/data/reducers'
 import { initialState } from '../../src/data/initial'
 import { payApi, type PayEnv } from '../../src/server/pay'
@@ -49,6 +51,7 @@ const json = (data: unknown, status = 200) => new Response(JSON.stringify(data),
 
 async function ensure(db: D1Database) {
   await db.exec('CREATE TABLE IF NOT EXISTS i18n (lang TEXT NOT NULL, src TEXT NOT NULL, dst TEXT NOT NULL, PRIMARY KEY (lang, src)); ')
+  await db.exec('CREATE TABLE IF NOT EXISTS search_log (q TEXT PRIMARY KEY, n INTEGER NOT NULL, last INTEGER NOT NULL); ')
   await db.exec('CREATE TABLE IF NOT EXISTS assets (id TEXT PRIMARY KEY, mime TEXT NOT NULL, data TEXT NOT NULL, ts INTEGER NOT NULL); ')
   await db.exec('CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, data TEXT NOT NULL); CREATE TABLE IF NOT EXISTS meta (id INTEGER PRIMARY KEY CHECK (id = 1), version INTEGER NOT NULL); CREATE TABLE IF NOT EXISTS live_events (id INTEGER PRIMARY KEY AUTOINCREMENT, room_id TEXT NOT NULL, type TEXT NOT NULL, data TEXT NOT NULL, ts INTEGER NOT NULL); CREATE INDEX IF NOT EXISTS live_events_room ON live_events(room_id, id); CREATE TABLE IF NOT EXISTS live_media (room_id TEXT NOT NULL, seq INTEGER NOT NULL, chunk TEXT, frame TEXT, mime TEXT, ts INTEGER NOT NULL, PRIMARY KEY (room_id, seq)); CREATE TABLE IF NOT EXISTS live_viewers (room_id TEXT NOT NULL, client_id TEXT NOT NULL, user_id TEXT, last_seen INTEGER NOT NULL, PRIMARY KEY (room_id, client_id)); CREATE TABLE IF NOT EXISTS live_counters (room_id TEXT PRIMARY KEY, likes INTEGER NOT NULL DEFAULT 0, comments INTEGER NOT NULL DEFAULT 0, peak INTEGER NOT NULL DEFAULT 0, seq INTEGER NOT NULL DEFAULT 0, mime TEXT)')
 }
@@ -219,6 +222,34 @@ export const onRequest: PagesFunction<Env> = async ({ request, env, params }) =>
     return json({ map })
   }
   // 图片资源：POST /api/asset { data: dataURL } → { url }；GET /api/asset/:id 返回图片
+  // 热搜：每次搜索 +1，7 天内未再被搜索的词不再上榜；过滤过长 / 含链接的词
+  if (path === 'hot' && request.method === 'GET') {
+    const rows = await env.DB.prepare('SELECT q, n FROM search_log WHERE last > ?1 ORDER BY n DESC, last DESC LIMIT 20').bind(Date.now() - 7 * 864e5).all<{ q: string; n: number }>()
+    return json({ list: rows.results })
+  }
+  if (path === 'hot' && request.method === 'POST') {
+    const q = String(((await request.json()) as { q?: string }).q ?? '').trim().replace(/\s+/g, ' ')
+    if (!q || q.length > 30 || /https?:|www\.|[<>]/i.test(q)) return json({ ok: false }, 400)
+    await env.DB.prepare('INSERT INTO search_log (q, n, last) VALUES (?1, 1, ?2) ON CONFLICT(q) DO UPDATE SET n = n + 1, last = ?2').bind(q, Date.now()).run()
+    return json({ ok: true })
+  }
+  // AI 客服：前端组装店铺 / 商品 / 订单上下文作为 system，模型只生成回复文本
+  if (path === 'assistant' && request.method === 'POST') {
+    if (!env.AI) return json({ error: 'AI unavailable' }, 503)
+    const body = (await request.json()) as { system?: string; messages?: { role: string; content: string }[] }
+    const system = String(body.system ?? '').slice(0, 6000)
+    const msgs = (body.messages ?? []).filter(m => (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string').slice(-10).map(m => ({ role: m.role, content: m.content.slice(0, 600) }))
+    if (!msgs.length) return json({ error: 'empty' }, 400)
+    for (const model of ['@cf/qwen/qwen3-30b-a3b-fp8', '@cf/meta/llama-3.3-70b-instruct-fp8-fast']) {
+      try {
+        const r = await env.AI.run(model, { messages: [{ role: 'system', content: system }, ...msgs], max_tokens: 400, temperature: 0.3 })
+        let text = typeof r.response === 'string' ? r.response : ''
+        text = text.replace(/<think>[\s\S]*?<\/think>/g, '').trim()
+        if (text) return json({ text, model })
+      } catch { /* 换下一个模型 */ }
+    }
+    return json({ error: 'AI failed' }, 502)
+  }
   if (path === 'asset' && request.method === 'POST') {
     const body = (await request.json()) as { data?: string }
     const m = /^data:(image\/[a-z+]+);base64,(.+)$/i.exec(body.data ?? '')

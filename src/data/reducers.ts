@@ -71,17 +71,29 @@ export const reducers = {
    * 广告点击：按竞价结算价（不高于出价）从店主余额扣费。
    * 当日预算用完则当天下线（不扣费、次日自动恢复，最后一次点击只扣剩余预算）；余额不足才暂停计划。
    */
-  adClick: (s: DataState, planId: string, word: string, price: number, c: Ctx): P => {
+  /**
+   * 广告点击扣费。无效点击过滤（不扣费，只记 invalidClicks）：
+   * 店主自己点击；同一访客 30 分钟内重复点击同一关键词；同一访客 24 小时内对同一计划超过 3 次有效点击。
+   */
+  adClick: (s: DataState, planId: string, word: string, price: number, clicker: string, c: Ctx): P => {
     const plan = s.adPlans.find(p => p.id === planId)
     if (!plan || plan.status !== 'on') return {}
     const shop = s.shops.find(x => x.id === plan.shopId)
     const owner = s.users.find(u => u.id === shop?.ownerId)
+    const now = Date.parse(c.now)
+    const who = clicker || 'anon'
+    const guard: Record<string, string[]> = {}
+    for (const [k, v] of Object.entries(plan.guard ?? {})) { const keep = v.filter(x => now - Number(x.split('|')[0]) < 864e5); if (keep.length) guard[k] = keep }
+    const mine = guard[who] ?? []
+    const invalid = who === owner?.id || mine.some(x => { const [t, w] = x.split('|'); return w === word && now - Number(t) < 18e5 }) || mine.length >= 3
+    if (invalid) return { adPlans: s.adPlans.map(p => p.id === planId ? { ...p, guard, stats: { ...p.stats, invalidClicks: (p.stats.invalidClicks ?? 0) + 1 } } : p) }
+    guard[who] = [...mine, `${now}|${word}`]
     const today = (plan.daily[c.now.slice(0, 10)] ?? [0, 0, 0, 0, 0])[2]
     const left = +(plan.dailyBudget - today).toFixed(2)
     if (left <= 0) return {}
     const cost = +Math.min(left, Math.max(AD_RESERVE, Math.min(adBid(plan, word), price || adBid(plan, word)))).toFixed(2)
     if (!owner || owner.balance < cost) return { adPlans: s.adPlans.map(p => p.id === planId ? { ...p, status: 'paused' as const } : p) }
-    return { users: s.users.map(u => u.id === owner.id ? { ...u, balance: +(u.balance - cost).toFixed(2) } : u), adPlans: s.adPlans.map(p => p.id === planId ? bumpAd(p, c, 1, cost, 0, 0) : p) }
+    return { users: s.users.map(u => u.id === owner.id ? { ...u, balance: +(u.balance - cost).toFixed(2) } : u), adPlans: s.adPlans.map(p => p.id === planId ? { ...bumpAd(p, c, 1, cost, 0, 0), guard } : p) }
   },
   replyReview: (s: DataState, id: string, reply: string, c: Ctx): P => ({ reviews: s.reviews.map(r => r.id === id ? { ...r, reply, replyAt: c.now } : r) }),
   /** 无需物流发货（虚拟商品 / 无货源代发）：直接标记已发货，可附发货内容 */

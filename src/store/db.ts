@@ -4,6 +4,8 @@ import { reducers, CTX_REDUCERS, type DataState, type Ctx, type ReducerName, typ
 import { initialState } from '@/data/initial'
 import type { Address, Order } from '@/data/types'
 import { sync } from './sync'
+import { useSession } from './session'
+import { track } from '@/lib/reco'
 
 const uid = (p = '') => p + Math.random().toString(36).slice(2, 10)
 export const genId = uid
@@ -23,6 +25,14 @@ export interface DB extends DataState, Actions {
 
 const needsCtx = CTX_REDUCERS
 
+/** 行为埋点：浏览 / 收藏 / 加购 / 下单，用于个性化推荐 */
+function trackAction(name: ReducerName, args: unknown[], s: DataState) {
+  const uid = useSession.getState().userId
+  if (name === 'addFootprint') track(uid, { t: 'view', id: args[0] as string })
+  else if (name === 'addToCart') track(uid, { t: 'cart', id: args[0] as string })
+  else if (name === 'toggleFavorite' && !s.favorites.includes(args[0] as string)) track(uid, { t: 'fav', id: args[0] as string })
+}
+
 export const useDB = create<DB>()(persist((set, get) => {
   const actions = {} as Record<string, (...args: unknown[]) => unknown>
   for (const name of Object.keys(reducers) as ReducerName[]) {
@@ -31,6 +41,7 @@ export const useDB = create<DB>()(persist((set, get) => {
       const full = needsCtx.has(name) ? [...args, c] : args
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const patch = (reducers[name] as any)(get(), ...full) as Partial<DataState>
+      trackAction(name, args, get())
       set(patch)
       sync.mutate(name, full)
       return c
@@ -45,6 +56,7 @@ export const useDB = create<DB>()(persist((set, get) => {
       const c = ctx()
       c.id = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(0, 19)
       const patch = reducers.createOrder(get(), userId, items, shopId, address, opts, c)
+      items.forEach(i => track(userId, { t: 'buy', id: i.productId }))
       set(patch)
       sync.mutate('createOrder', [userId, items, shopId, address, opts, c])
       return get().orders.find(o => o.id === c.id)!
