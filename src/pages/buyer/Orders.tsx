@@ -69,7 +69,7 @@ export default function Orders() {
                   {o.items.map((it, i) => (
                     <div key={i} className="flex gap-3 py-2 first:pt-0 last:pb-0">
                       <Link to={`/item/${it.productId}`} className="w-20 h-20 rounded-lg overflow-hidden shrink-0"><Img src={it.image} alt={it.title} w={80} h={80} className="w-full h-full" /></Link>
-                      <div className="flex-1 min-w-0"><Link to={`/item/${it.productId}`} className="text-ink-900 line-clamp-2 hover:text-brand-500">{it.title}</Link><div className="text-xs text-ink-400 mt-1">{it.skuText}</div><div className="text-xs text-ink-400">{products.find(p => p.id === it.productId)?.freeShipping ? '包邮' : ''} 不支持7天无理由</div>{(o.status === 'done' || o.status === 'received' || o.status === 'shipped') && <button onClick={() => setRefundOf(o)} className="btn-outline btn-sm mt-1.5">申请售后</button>}</div>
+                      <div className="flex-1 min-w-0"><Link to={`/item/${it.productId}`} className="text-ink-900 line-clamp-2 hover:text-brand-500">{it.title}</Link><div className="text-xs text-ink-400 mt-1">{it.skuText}</div><div className="text-xs text-ink-400">{products.find(p => p.id === it.productId)?.freeShipping ? '包邮' : ''} 不支持7天无理由</div>{(o.status === 'done' || o.status === 'received' || o.status === 'shipped') && <button onClick={() => setRefundOf(o)} className="btn-outline btn-sm mt-1.5">申请售后</button>}{o.status !== 'unpaid' && <Link to={`/my/tickets?order=${o.id}`} className="block text-xs text-ink-400 hover:text-brand-500 mt-1.5">投诉商家</Link>}</div>
                       <div className="text-right w-20"><div className="font-num">¥{money(it.price)}</div><div className="text-xs text-ink-400">x{it.qty}</div></div>
                     </div>
                   ))}

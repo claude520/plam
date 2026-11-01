@@ -128,7 +128,8 @@ export function buildSeed() {
     const freight = p.freeShipping ? 0 : 10
     const discount = rnd() > 0.5 ? Math.min(Math.round(total * 0.1), 50) : 0
     const status = i < 14 ? (['unpaid', 'paid', 'shipped', 'received', 'done', 'done', 'refunding', 'shipped', 'paid', 'done', 'closed', 'done', 'received', 'done'] as Order['status'][])[i] : pick(statusPool)
-    const created = daysAgo(i < 14 ? i : rint(2, 180), rint(0, 23))
+    // 待付款 / 运输中的演示订单落在自动规则（24 小时关单、10 天自动收货）的时限内，保证演示数据不被立即处理
+    const created = status === 'unpaid' ? daysAgo(0, rint(1, 20)) : status === 'shipped' ? daysAgo(rint(1, 7), rint(0, 23)) : daysAgo(i < 14 ? i : rint(2, 180), rint(0, 23))
     const userId = i < 14 ? 'u-buyer-1' : pick(users.filter(u => u.role === 'buyer')).id
     const addr = addresses[0]
     const o: Order = {
@@ -160,7 +161,7 @@ export function buildSeed() {
   const refunds: Refund[] = orders.filter(o => o.status === 'refunding' || (o.status === 'done' && rnd() > 0.85)).map((o, i) => ({
     id: `R${20261000 + i}`, orderId: o.id, userId: o.userId, shopId: o.shopId, amount: o.payAmount,
     reason: pick(['七天无理由退换货', '质量问题', '商品与描述不符', '拍错/多拍/不想要', '物流问题']), type: rnd() > 0.5 ? 'refund' : 'return',
-    status: o.status === 'refunding' ? 'pending' : pick(['approved', 'rejected', 'refunded']), createdAt: daysAgo(rint(0, 30)), desc: '申请退款，请商家尽快处理。',
+    status: o.status === 'refunding' ? 'pending' : pick(['approved', 'rejected', 'refunded']), createdAt: o.status === 'refunding' ? daysAgo(0, rint(1, 40)) : daysAgo(rint(0, 30)), desc: '申请退款，请商家尽快处理。',
   }))
 
   // ---------- reviews ----------
@@ -239,7 +240,7 @@ export function buildSeed() {
     { id: 'r2', name: '运营', permissions: ['product.audit', 'marketing.*', 'content.*', 'category.*'], members: 6 },
     { id: 'r3', name: '风控', permissions: ['user.freeze', 'shop.audit', 'refund.*', 'log.read'], members: 3 },
     { id: 'r4', name: '财务', permissions: ['finance.*', 'payment.read', 'settlement.*'], members: 2 },
-    { id: 'r5', name: '客服', permissions: ['order.read', 'refund.read', 'user.read'], members: 12 },
+    { id: 'r5', name: '客服', permissions: ['order.read', 'refund.read', 'user.read', 'ticket.*'], members: 12 },
   ]
 
 
@@ -287,6 +288,7 @@ export const PERMISSIONS = [
   { group: '商家', items: ['shop.read', 'shop.audit', 'shop.close'] },
   { group: '商品', items: ['product.read', 'product.audit', 'product.off', 'category.*'] },
   { group: '订单', items: ['order.read', 'order.edit', 'refund.*'] },
+  { group: '客诉', items: ['ticket.read', 'ticket.reply', 'ticket.*'] },
   { group: '营销', items: ['marketing.*', 'content.*'] },
   { group: '财务', items: ['finance.*', 'payment.read', 'payment.edit', 'settlement.*'] },
   { group: '系统', items: ['role.*', 'log.read', 'setting.*'] },

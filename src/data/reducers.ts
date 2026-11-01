@@ -2,6 +2,7 @@
 import type {
   Address, Announcement, Banner, Campaign, CartItem, Category, Coupon, Message, Order, OrderStatus,
   PaymentProvider, Product, Refund, Review, Shop, User, AuditLog, AdminRole, LiveRoom, LiveConfig, Violation, AdPlan, AdKeyword,
+  LedgerEntry, Withdrawal, Ticket, TicketReply, TicketStatus,
 } from './types'
 
 export interface DataState {
@@ -11,16 +12,82 @@ export interface DataState {
   auditLogs: AuditLog[]; messages: Message[]; adminRoles: AdminRole[]
   lives: LiveRoom[]; liveConfigs: LiveConfig[]
   violations: Violation[]; adPlans: AdPlan[]
+  ledger: LedgerEntry[]; withdrawals: Withdrawal[]; tickets: Ticket[]
   favorites: string[]; footprints: { productId: string; time: string }[]; followedShops: string[]
   myCoupons: { couponId: string; used: boolean }[]
-  settings: { siteName: string; slogan: string; commissionRate: number; freightDefault: number; autoConfirmDays: number; maintenance: boolean }
+  settings: {
+    siteName: string; slogan: string; commissionRate: number; freightDefault: number; autoConfirmDays: number; maintenance: boolean
+    /** 规则中心：未付款自动关单（小时）、退款超时自动同意（小时）、最低提现金额 */
+    unpaidCloseHours?: number; refundAutoHours?: number; withdrawMin?: number
+    /** 最近一次自动规则执行时间与结果 */
+    lastSweepAt?: string; lastSweepReport?: string[]
+  }
 }
-export const COLLECTIONS = ['users', 'shops', 'categories', 'products', 'orders', 'addresses', 'cart', 'coupons', 'reviews', 'refunds', 'banners', 'announcements', 'paymentProviders', 'campaigns', 'auditLogs', 'messages', 'adminRoles', 'lives', 'liveConfigs', 'violations', 'adPlans', 'favorites', 'footprints', 'followedShops', 'myCoupons', 'settings'] as const satisfies readonly (keyof DataState)[]
+export const COLLECTIONS = ['users', 'shops', 'categories', 'products', 'orders', 'addresses', 'cart', 'coupons', 'reviews', 'refunds', 'banners', 'announcements', 'paymentProviders', 'campaigns', 'auditLogs', 'messages', 'adminRoles', 'lives', 'liveConfigs', 'violations', 'adPlans', 'ledger', 'withdrawals', 'tickets', 'favorites', 'footprints', 'followedShops', 'myCoupons', 'settings'] as const satisfies readonly (keyof DataState)[]
 
 /** 每次变更由调用方生成的上下文（id / 时间），保证前后端结果一致 */
 export interface Ctx { id: string; now: string }
 type P = Partial<DataState>
 const round = (n: number) => Math.round(n * 100) / 100
+
+// ---------- 资金（担保交易） ----------
+const LEDGER_MAX = 3000
+function ledgerAdd(s: DataState, c: Ctx, items: Omit<LedgerEntry, 'id' | 'at'>[]): LedgerEntry[] {
+  return [...items.filter(e => e.amount).map((e, i) => ({ ...e, amount: round(e.amount), id: `${c.id}-${i}`, at: c.now })), ...s.ledger].slice(0, LEDGER_MAX)
+}
+const ownerOf = (s: DataState, shopId: string) => s.shops.find(x => x.id === shopId)?.ownerId
+
+/** 确认收货结算：担保中的货款扣除平台佣金后打入商家（店主）余额；amount 用于部分退款后只结算剩余货款 */
+function settlePatch(s: DataState, orderId: string, c: Ctx, amount?: number): P {
+  const o = s.orders.find(x => x.id === orderId)
+  if (!o || o.settledAt || !o.paidAt) return {}
+  const gross = round(amount ?? o.payAmount)
+  const rate = s.settings.commissionRate
+  const commission = round(gross * rate / 100)
+  const net = round(gross - commission)
+  const owner = ownerOf(s, o.shopId)
+  return {
+    orders: s.orders.map(x => x.id === orderId ? { ...x, settledAt: c.now, commission } : x),
+    users: owner ? s.users.map(u => u.id === owner ? { ...u, balance: round(u.balance + net) } : u) : s.users,
+    ledger: ledgerAdd(s, c, [{ type: 'settle', amount: net, shopId: o.shopId, userId: owner, orderId, note: amount != null ? '部分退款后剩余货款结算' : '买家确认收货，货款结算' }, { type: 'commission', amount: commission, shopId: o.shopId, orderId, note: `平台佣金 ${rate}%` }]),
+  }
+}
+
+function setStatusPatch(s: DataState, orderId: string, status: OrderStatus, c: Ctx): P {
+  const prev = s.orders.find(x => x.id === orderId)
+  const orders = s.orders.map(x => x.id === orderId ? { ...x, status, ...(status === 'done' || status === 'received' ? { doneAt: x.doneAt ?? c.now } : {}) } : x)
+  // 首次进入「已收货 / 完成」才结算（历史已完成订单视为已结算）
+  if (prev && (status === 'received' || status === 'done') && prev.status !== 'received' && prev.status !== 'done') return { orders, ...settlePatch({ ...s, orders }, orderId, c) }
+  return { orders }
+}
+
+/** 售后状态变更：退款成功时钱从担保（未结算）或商家余额（已结算）退回买家 */
+function refundPatch(s: DataState, id: string, patch: Partial<Refund>, c: Ctx): P {
+  const rf = s.refunds.find(r => r.id === id)
+  const refunds = s.refunds.map(r => r.id === id ? { ...r, ...patch } : r)
+  if (!rf) return { refunds }
+  let st: DataState = { ...s, refunds }
+  if (patch.status === 'refunded' && rf.status !== 'refunded') {
+    const o = s.orders.find(x => x.id === rf.orderId)
+    const owner = ownerOf(s, rf.shopId)
+    st = { ...st, orders: st.orders.map(x => x.id === rf.orderId ? { ...x, status: 'closed' as OrderStatus, closeReason: '退款成功' } : x), users: st.users.map(u => u.id === rf.userId ? { ...u, balance: round(u.balance + rf.amount) } : u) }
+    if (o?.settledAt) {
+      st = { ...st, users: st.users.map(u => u.id === owner ? { ...u, balance: round(u.balance - rf.amount) } : u), ledger: ledgerAdd(st, c, [{ type: 'refund', amount: rf.amount, userId: rf.userId, shopId: rf.shopId, orderId: rf.orderId, note: '已结算订单退款，从商家余额扣回' }]) }
+    } else {
+      st = { ...st, ledger: ledgerAdd(st, c, [{ type: 'refund', amount: rf.amount, userId: rf.userId, shopId: rf.shopId, orderId: rf.orderId, note: '担保中订单退款，原路退回买家' }]) }
+      if (o?.paidAt && rf.amount < o.payAmount) st = { ...st, ...settlePatch(st, rf.orderId, { ...c, id: c.id + 's' }, o.payAmount - rf.amount) }
+    }
+  }
+  if (patch.status === 'rejected' || patch.status === 'cancelled') st = { ...st, orders: st.orders.map(o => o.id === rf.orderId ? { ...o, status: (o.shippedAt ? 'shipped' : 'paid') as OrderStatus } : o) }
+  return { refunds: st.refunds, orders: st.orders, users: st.users, ledger: st.ledger }
+}
+
+/** 工单优先级：涉及欺诈 / 人身财产安全为紧急，投诉商家为高 */
+function ticketPriority(type: string, content: string): Ticket['priority'] {
+  if (/诈骗|骗子|报警|假货|人身|威胁|盗号|被盗/.test(content)) return 'urgent'
+  if (/投诉|欺诈|售假|拒绝退款/.test(type + content)) return 'high'
+  return 'normal'
+}
 
 export const reducers = {
   addToCart: (s: DataState, productId: string, skuId: string, qty: number, c: Ctx): P => {
@@ -49,12 +116,13 @@ export const reducers = {
       orders: s.orders.map(x => x.id === orderId ? { ...x, status: 'paid' as OrderStatus, paidAt: c.now, payment: { provider, tradeNo: c.id } } : x),
       products: s.products.map(p => { const it = o.items.find(i => i.productId === p.id); if (!it) return p; const sku = it.skuText; return { ...p, sales: p.sales + it.qty, stock: Math.max(0, p.stock - it.qty), skus: p.skus.map(k => Object.values(k.attrs).join(' / ') === sku ? { ...k, stock: Math.max(0, k.stock - it.qty) } : k) } }),
       users,
+      ledger: ledgerAdd(s, c, [{ type: 'escrow', amount: o.payAmount, userId: o.userId, shopId: o.shopId, orderId, note: `买家付款（${provider}）进入担保账户` }]),
       ...(o.adPlanId && s.adPlans.some(p => p.id === o.adPlanId) ? { adPlans: s.adPlans.map(p => p.id === o.adPlanId ? bumpAd(p, c, 0, 0, 1, o.payAmount) : p) } : {}),
       ...(o.liveId && s.lives.some(l => l.id === o.liveId) ? { lives: s.lives.map(l => l.id === o.liveId ? { ...l, stats: { ...l.stats, orders: l.stats.orders + 1, gmv: round(l.stats.gmv + o.payAmount) }, keypoints: l.keypoints.map((k, i, arr) => i === arr.length - 1 && !k.end && o.items.some(it => it.productId === k.productId) ? { ...k, orders: k.orders + 1 } : k) } : l) } : {}),
     }
   },
   updateOrder: (s: DataState, orderId: string, patch: Partial<Order>): P => ({ orders: s.orders.map(x => x.id === orderId ? { ...x, ...patch } : x) }),
-  setOrderStatus: (s: DataState, orderId: string, status: OrderStatus, c: Ctx): P => ({ orders: s.orders.map(x => x.id === orderId ? { ...x, status, ...(status === 'done' || status === 'received' ? { doneAt: c.now } : {}) } : x) }),
+  setOrderStatus: (s: DataState, orderId: string, status: OrderStatus, c: Ctx): P => setStatusPatch(s, orderId, status, c),
   shipOrder: (s: DataState, orderId: string, company: string, no: string, c: Ctx): P => ({ orders: s.orders.map(x => x.id === orderId && x.status === 'paid' ? { ...x, status: 'shipped' as OrderStatus, shippedAt: c.now, shipType: x.shipType ?? 'express', logistics: { company, no, traces: [{ time: c.now, text: `【发货】商家已发货，${company} 已揽收，运单号 ${no}` }] } } : x) }),
   addReview: (s: DataState, r: Omit<Review, 'id' | 'createdAt'>, c: Ctx): P => ({ reviews: [{ ...r, id: c.id, createdAt: c.now }, ...s.reviews], products: s.products.map(p => p.id === r.productId ? { ...p, reviewCount: p.reviewCount + 1 } : p) }),
   // —— 违规 ——
@@ -101,14 +169,7 @@ export const reducers = {
   /** 补发货：追加一条发货记录，可换物流或补发内容 */
   reshipOrder: (s: DataState, orderId: string, company: string, no: string, content: string, c: Ctx): P => ({ orders: s.orders.map(x => x.id === orderId && x.logistics ? { ...x, ...(content ? { deliverNote: [x.deliverNote, content].filter(Boolean).join('\n') } : {}), logistics: { company: company || x.logistics.company, no: no || x.logistics.no, traces: [...x.logistics.traces, { time: c.now, text: company && company !== '无需物流' ? `【补发货】商家已补发，${company} 运单号 ${no}` : '【补发货】商家已补发货' + (content ? '，补发内容已发送给买家' : '') }] } } : x) }),
   createRefund: (s: DataState, r: Omit<Refund, 'id' | 'createdAt' | 'status'>, c: Ctx): P => ({ refunds: [{ ...r, id: `R${c.id.slice(-8).toUpperCase()}`, createdAt: c.now, status: 'pending' }, ...s.refunds], orders: s.orders.map(o => o.id === r.orderId ? { ...o, status: 'refunding' as OrderStatus } : o) }),
-  updateRefund: (s: DataState, id: string, patch: Partial<Refund>): P => {
-    const rf = s.refunds.find(r => r.id === id)
-    const refunds = s.refunds.map(r => r.id === id ? { ...r, ...patch } : r)
-    let orders = s.orders; let users = s.users
-    if (rf && patch.status === 'refunded') { orders = s.orders.map(o => o.id === rf.orderId ? { ...o, status: 'closed' as OrderStatus } : o); users = s.users.map(u => u.id === rf.userId ? { ...u, balance: round(u.balance + rf.amount) } : u) }
-    if (rf && (patch.status === 'rejected' || patch.status === 'cancelled')) orders = s.orders.map(o => o.id === rf.orderId ? { ...o, status: (o.shippedAt ? 'shipped' : 'paid') as OrderStatus } : o)
-    return { refunds, orders, users }
-  },
+  updateRefund: (s: DataState, id: string, patch: Partial<Refund>, c: Ctx): P => refundPatch(s, id, patch, c),
   upsertAddress: (s: DataState, a: Address): P => {
     const exists = s.addresses.some(x => x.id === a.id)
     let list = exists ? s.addresses.map(x => x.id === a.id ? a : x) : [...s.addresses, a]
@@ -154,11 +215,66 @@ export const reducers = {
   bumpLiveStats: (s: DataState, id: string, delta: Partial<LiveRoom['stats']>): P => ({ lives: s.lives.map(l => l.id === id ? { ...l, stats: Object.fromEntries(Object.entries(l.stats).map(([k, v]) => [k, k === 'viewers' ? ((delta as Record<string, number>)[k] ?? v) : k === 'peak' ? Math.max(v, (delta as Record<string, number>)[k] ?? v) : v + ((delta as Record<string, number>)[k] ?? 0)])) as LiveRoom['stats'] } : l) }),
   upsertLiveConfig: (s: DataState, cfg: LiveConfig): P => ({ liveConfigs: s.liveConfigs.some(x => x.shopId === cfg.shopId) ? s.liveConfigs.map(x => x.shopId === cfg.shopId ? cfg : x) : [...s.liveConfigs, cfg] }),
   followLive: (s: DataState, shopId: string, liveId: string): P => s.followedShops.includes(shopId) ? {} : ({ followedShops: [shopId, ...s.followedShops], shops: s.shops.map(x => x.id === shopId ? { ...x, fans: x.fans + 1 } : x), lives: s.lives.map(l => l.id === liveId ? { ...l, stats: { ...l.stats, newFans: l.stats.newFans + 1 } } : l) }),
+  // ---------- 提现 / 调账 ----------
+  requestWithdraw: (s: DataState, shopId: string, amount: number, account: string, c: Ctx): P => {
+    const owner = s.users.find(u => u.id === ownerOf(s, shopId))
+    const amt = round(amount)
+    if (!owner || amt < (s.settings.withdrawMin ?? 100) || amt > owner.balance) return {}
+    return { users: s.users.map(u => u.id === owner.id ? { ...u, balance: round(u.balance - amt) } : u), withdrawals: [{ id: c.id, shopId, userId: owner.id, amount: amt, account, status: 'pending' as const, createdAt: c.now }, ...s.withdrawals] }
+  },
+  reviewWithdraw: (s: DataState, id: string, ok: boolean, reviewer: string, note: string, c: Ctx): P => {
+    const w = s.withdrawals.find(x => x.id === id)
+    if (!w || w.status !== 'pending') return {}
+    const withdrawals = s.withdrawals.map(x => x.id === id ? { ...x, status: ok ? 'paid' as const : 'rejected' as const, reviewedAt: c.now, reviewer, note: note || undefined } : x)
+    if (ok) return { withdrawals, ledger: ledgerAdd(s, c, [{ type: 'withdraw', amount: w.amount, shopId: w.shopId, userId: w.userId, note: `提现打款至 ${w.account}` }]) }
+    return { withdrawals, users: s.users.map(u => u.id === w.userId ? { ...u, balance: round(u.balance + w.amount) } : u) }
+  },
+  adjustBalance: (s: DataState, userId: string, amount: number, note: string, actor: string, c: Ctx): P => {
+    const u = s.users.find(x => x.id === userId)
+    if (!u || !amount || u.balance + amount < 0) return {}
+    return { users: s.users.map(x => x.id === userId ? { ...x, balance: round(x.balance + amount) } : x), ledger: ledgerAdd(s, c, [{ type: 'adjust', amount, userId, shopId: u.shopId, note }]), auditLogs: [{ id: c.id, actor, action: `人工调账 ${amount > 0 ? '+' : ''}${round(amount)}：${note}`, target: userId, time: c.now, ip: '0.0.0.0' }, ...s.auditLogs].slice(0, 500) }
+  },
+  // ---------- 客诉工单 ----------
+  createTicket: (s: DataState, t: Pick<Ticket, 'userId' | 'shopId' | 'orderId' | 'type' | 'title' | 'content' | 'images'>, c: Ctx): P => ({ tickets: [{ ...t, id: c.id, status: 'open' as const, priority: ticketPriority(t.type, t.content), replies: [{ by: 'system' as const, name: '系统', text: '您的问题已提交，平台小二将在 24 小时内处理（紧急问题 2 小时内）。', at: c.now }], createdAt: c.now, updatedAt: c.now }, ...s.tickets] }),
+  replyTicket: (s: DataState, id: string, reply: Omit<TicketReply, 'at'>, status: TicketStatus | null, c: Ctx): P => ({ tickets: s.tickets.map(t => t.id !== id ? t : { ...t, replies: [...t.replies, { ...reply, at: c.now }], status: status ?? (reply.by === 'admin' && t.status === 'open' ? 'processing' : reply.by === 'user' && t.status === 'resolved' ? 'processing' : t.status), firstReplyAt: t.firstReplyAt ?? (reply.by === 'admin' ? c.now : undefined), updatedAt: c.now }) }),
+  updateTicket: (s: DataState, id: string, patch: Partial<Pick<Ticket, 'status' | 'priority' | 'assignee' | 'satisfaction'>>, c: Ctx): P => ({ tickets: s.tickets.map(t => t.id === id ? { ...t, ...patch, updatedAt: c.now } : t) }),
+  // ---------- 规则中心：定时任务（Worker 每 5 分钟随请求触发，也可在后台手动执行） ----------
+  runSchedules: (s: DataState, c: Ctx): P => {
+    const { state, report } = runRules(s, c)
+    const keys = new Set<keyof DataState>(['settings', 'auditLogs'])
+    for (const k of Object.keys(state) as (keyof DataState)[]) if (state[k] !== s[k]) keys.add(k)
+    const out: DataState = { ...state, settings: { ...state.settings, lastSweepAt: c.now, lastSweepReport: report }, auditLogs: report.length ? [{ id: c.id, actor: 'system', action: '自动规则：' + report.join('；'), target: 'schedules', time: c.now, ip: '0.0.0.0' }, ...state.auditLogs].slice(0, 500) : state.auditLogs }
+    return Object.fromEntries([...keys].map(k => [k, out[k]])) as P
+  },
 }
+/** 自动规则（纯函数）：超时关单、自动确认收货并结算、退款超时自动同意、优惠券过期、违规申诉期满生效、工单自动关闭 */
+export function runRules(s: DataState, c: Ctx): { state: DataState; report: string[] } {
+  let st = s
+  const report: string[] = []
+  const now = Date.parse(c.now)
+  const sub = (k: string): Ctx => ({ id: `${c.id}-${k}`, now: c.now })
+  const set = st.settings
+  const unpaid = st.orders.filter(o => o.status === 'unpaid' && now - Date.parse(o.createdAt) > (set.unpaidCloseHours ?? 24) * 36e5).map(o => o.id)
+  if (unpaid.length) { st = { ...st, orders: st.orders.map(o => unpaid.includes(o.id) ? { ...o, status: 'closed' as OrderStatus, closeReason: '超时未付款，系统自动关闭' } : o) }; report.push(`超时未付款关单 ${unpaid.length} 笔`) }
+  const confirm = st.orders.filter(o => o.status === 'shipped' && o.shippedAt && now - Date.parse(o.shippedAt) > set.autoConfirmDays * 864e5).map(o => o.id)
+  confirm.forEach((id, i) => { st = { ...st, ...setStatusPatch(st, id, 'received', sub('r' + i)) } })
+  if (confirm.length) report.push(`自动确认收货并结算 ${confirm.length} 笔`)
+  const rfs = st.refunds.filter(r => r.status === 'pending' && now - Date.parse(r.createdAt) > (set.refundAutoHours ?? 48) * 36e5)
+  rfs.forEach((r, i) => { st = { ...st, ...refundPatch(st, r.id, { status: r.type === 'refund' ? 'refunded' : 'approved' }, sub('f' + i)) } })
+  if (rfs.length) report.push(`商家超时未处理，自动同意售后 ${rfs.length} 单`)
+  const expired = st.coupons.filter(x => x.status === 'active' && Date.parse(x.endAt) < now).map(x => x.id)
+  if (expired.length) { st = { ...st, coupons: st.coupons.map(x => expired.includes(x.id) ? { ...x, status: 'expired' as const } : x) }; report.push(`优惠券过期 ${expired.length} 张`) }
+  const upheld = st.violations.filter(v => v.status === 'pending' && !v.warning && Date.parse(v.appealDeadline) < now).map(v => v.id)
+  if (upheld.length) { st = { ...st, violations: st.violations.map(v => upheld.includes(v.id) ? { ...v, status: 'upheld' as const } : v) }; report.push(`申诉期满处罚生效 ${upheld.length} 条`) }
+  const closeT = st.tickets.filter(t => t.status === 'resolved' && now - Date.parse(t.updatedAt) > 7 * 864e5).map(t => t.id)
+  if (closeT.length) { st = { ...st, tickets: st.tickets.map(t => closeT.includes(t.id) ? { ...t, status: 'closed' as const } : t) }; report.push(`已解决工单自动关闭 ${closeT.length} 个`) }
+  return { state: st, report }
+}
+
 export type Reducers = typeof reducers
 export type ReducerName = keyof Reducers
 /** 需要 Ctx（id/时间）作为末尾参数的 reducer */
-export const CTX_REDUCERS = new Set<ReducerName>(['addViolation', 'appealViolation', 'judgeViolation', 'adImpress', 'adClick', 'addToCart', 'addFootprint', 'createOrder', 'payOrder', 'setOrderStatus', 'shipOrder', 'deliverOrder', 'reshipOrder', 'replyReview', 'addReview', 'createRefund', 'registerUser', 'sendMessage', 'log', 'startLive', 'endLive', 'setLiveExplain'])
+export const CTX_REDUCERS = new Set<ReducerName>(['updateRefund', 'requestWithdraw', 'reviewWithdraw', 'adjustBalance', 'createTicket', 'replyTicket', 'updateTicket', 'runSchedules', 'addViolation', 'appealViolation', 'judgeViolation', 'adImpress', 'adClick', 'addToCart', 'addFootprint', 'createOrder', 'payOrder', 'setOrderStatus', 'shipOrder', 'deliverOrder', 'reshipOrder', 'replyReview', 'addReview', 'createRefund', 'registerUser', 'sendMessage', 'log', 'startLive', 'endLive', 'setLiveExplain'])
 
 /** 最低点击扣费（保留价） */
 export const AD_RESERVE = 0.05

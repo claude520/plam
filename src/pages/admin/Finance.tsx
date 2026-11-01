@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { CreditCard, Plus, Download, Landmark, Check, Webhook, KeyRound } from 'lucide-react'
+import { CreditCard, Plus, Download, Check, Webhook, KeyRound } from 'lucide-react'
 import { useDB } from '@/store/db'
-import { Avatar, Modal, Field, PageHeader, Stat, Switch, Table, Select, type Column } from '@/components/ui'
-import { cls, fmtDate, money, PAY_NAMES } from '@/lib/format'
+import { Modal, Field, PageHeader, Stat, Switch } from '@/components/ui'
+import { cls, money, PAY_NAMES } from '@/lib/format'
 import { toast } from '@/store/session'
 import { TrendArea, Bars, Donut, days } from '@/components/Charts'
 import type { PaymentProvider, Shop } from '@/data/types'
@@ -63,32 +63,6 @@ export function Payments() {
       <div className="card p-5 mt-4"><div className="font-semibold mb-2 flex items-center gap-2"><Webhook className="w-4 h-4 text-qn-500" />统一支付网关</div><div className="text-sm text-ink-600 leading-7">收银台按所选渠道调用：PayOS <code className="bg-ink-100 rounded px-1.5 py-0.5 text-xs">POST /api/pay/payos/create</code> 生成 VietQR，到账由 <code className="bg-ink-100 rounded px-1.5 py-0.5 text-xs">POST /api/pay/payos/webhook</code>（HMAC-SHA256 验签）和状态查询确认；Apple Pay 经 <code className="bg-ink-100 rounded px-1.5 py-0.5 text-xs">/api/pay/applepay/validate</code> 完成商户验证；Google Pay 支付凭证提交到 <code className="bg-ink-100 rounded px-1.5 py-0.5 text-xs">/api/pay/googlepay/confirm</code>。订单金额一律以服务端为准，支付成功由服务端改写订单状态。</div></div>
       <ChannelKeys />
       <Modal open={!!editing} onClose={() => setEditing(null)} title={`${editing?.name} 参数配置`} footer={<><button className="btn-outline" onClick={() => setEditing(null)}>取消</button><button className="btn-qn" onClick={() => { updatePayment(editing!.id, editing!); log('admin', '更新支付配置', editing!.code); setEditing(null); toast('配置已保存') }}>保存</button></>}>{editing && <div className="space-y-4"><Field label="费率（%）"><input type="number" step="0.1" className="input-qn" value={editing.feeRate} onChange={e => setEditing({ ...editing, feeRate: Number(e.target.value) })} /></Field>{Object.entries(editing.config).map(([k, v]) => <Field key={k} label={k}><input className="input-qn font-num" value={v} onChange={e => setEditing({ ...editing, config: { ...editing.config, [k]: e.target.value } })} /></Field>)}<Field label="新增参数"><div className="flex gap-2"><input className="input-qn" placeholder="参数名" id="newk" /><button className="btn-outline whitespace-nowrap" onClick={() => { const k = (document.getElementById('newk') as HTMLInputElement).value; if (k) setEditing({ ...editing, config: { ...editing.config, [k]: '' } }) }}>添加</button></div></Field><div className="text-xs text-ink-400 flex items-center gap-1"><CreditCard className="w-3 h-3" />敏感参数将加密存储，前端仅显示脱敏值。</div></div>}</Modal>
-    </div>
-  )
-}
-
-export function Settlements() {
-  const { shops, orders, settings, users, log } = useDB()
-  const [month, setMonth] = useState('current')
-  const [sel, setSel] = useState<string[]>([])
-  const [done, setDone] = useState<string[]>([])
-  const rows = useMemo(() => shops.map(s => { const os = orders.filter(o => o.shopId === s.id && (o.status === 'done' || o.status === 'received')); const gross = os.reduce((a, o) => a + o.payAmount, 0); const fee = gross * settings.commissionRate / 100; return { id: s.id, s, cnt: os.length, gross, fee, net: gross - fee, owner: users.find(u => u.id === s.ownerId) } }).filter(r => r.cnt > 0).sort((a, b) => b.gross - a.gross), [shops, orders, settings, users])
-  type Row = typeof rows[0]
-  const cols: Column<Row>[] = [
-    { key: 's', title: '商家', render: r => <div className="flex items-center gap-2"><Avatar src={r.s.logo} name="" size={28} /><div><div className="font-medium">{r.s.name}</div><div className="text-xs text-ink-400">{r.owner?.username} · 招商银行 **** 8821</div></div></div> },
-    { key: 'cnt', title: '结算订单', render: r => <span className="font-num">{r.cnt}</span> },
-    { key: 'gross', title: '成交额', render: r => <span className="font-num">¥{money(r.gross)}</span> },
-    { key: 'fee', title: `平台佣金 ${settings.commissionRate}%`, render: r => <span className="font-num text-ink-500">-¥{money(r.fee)}</span> },
-    { key: 'net', title: '应结金额', render: r => <span className="font-num font-semibold text-emerald-700">¥{money(r.net)}</span> },
-    { key: 'status', title: '状态', render: r => done.includes(r.id) ? <span className="tag-green">已打款</span> : <span className="tag-gold">待结算</span> },
-    { key: 'op', title: '操作', render: r => done.includes(r.id) ? <span className="text-xs text-ink-400">{fmtDate(new Date().toISOString(), false)}</span> : <button onClick={() => { setDone(d => [...d, r.id]); log('admin', '商家结算打款', r.id); toast(`已向 ${r.s.name} 打款 ¥${money(r.net)}`) }} className="btn-qn btn-sm">打款</button> },
-  ]
-  const total = rows.reduce((a, r) => a + r.net, 0)
-  return (
-    <div>
-      <PageHeader title="商家结算" desc="按周期汇总商家已完成订单，扣除平台佣金后打款。" extra={<><Select value={month} onChange={setMonth} options={[{ value: 'current', label: '本结算周期' }, { value: 'last', label: '上一周期' }]} /><button onClick={() => toast('结算单已导出')} className="btn-outline"><Download className="w-4 h-4" />导出结算单</button></>} />
-      <div className="grid grid-cols-4 gap-3 mb-4"><Stat label="待结算商家" value={rows.filter(r => !done.includes(r.id)).length} /><Stat label="应结总额" value={`¥${money(rows.filter(r => !done.includes(r.id)).reduce((a, r) => a + r.net, 0), 0)}`} accent="text-emerald-700" /><Stat label="平台佣金收入" value={`¥${money(rows.reduce((a, r) => a + r.fee, 0), 0)}`} accent="text-brand-500" /><Stat label="周期成交额" value={`¥${money(rows.reduce((a, r) => a + r.gross, 0), 0)}`} /></div>
-      <div className="card p-5"><div className="flex items-center gap-3 mb-3">{sel.length > 0 && <><span className="text-sm text-ink-500">已选 {sel.length} 家</span><button onClick={() => { setDone(d => [...new Set([...d, ...sel])]); log('admin', '批量结算打款', sel.join(',')); toast(`已批量打款 ${sel.length} 家商家`); setSel([]) }} className="btn-qn btn-sm"><Landmark className="w-3.5 h-3.5" />批量打款</button></>}<span className="ml-auto text-xs text-ink-400">合计应结 ¥{money(total)}</span></div><Table columns={cols} data={rows} selectable selected={sel} onSelect={setSel} /></div>
     </div>
   )
 }

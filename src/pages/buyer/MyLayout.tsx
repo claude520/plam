@@ -23,6 +23,7 @@ export default function MyLayout() {
     { label: '我的发票', children: [{ label: '全部发票', to: '/my/invoices' }, { label: '批量开票', to: '/my/invoices?tab=batch' }] },
     { label: '评价管理', to: '/my/reviews', badge: pendingReview ? String(pendingReview) : undefined },
     { label: '退款维权', to: '/my/refunds' },
+    { label: '我的投诉', to: '/my/tickets' },
     { label: '消息中心', to: '/my/messages' },
     { label: '账户设置', children: [{ label: '个人资料', to: '/my/settings' }, { label: '收货地址', to: '/my/address' }, { label: '安全设置', to: '/my/settings?tab=security' }] },
   ]

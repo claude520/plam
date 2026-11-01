@@ -160,6 +160,13 @@ export const onRequest: PagesFunction<Env> = async ({ request, env, params }) =>
       data = { ...data, paymentProviders: fresh.map(p => old.has(p.code) ? { ...p, enabled: old.get(p.code)!.enabled, feeRate: old.get(p.code)!.feeRate } : p) }
       try { await save(env.DB, data, ['paymentProviders'], version); version += 1 } catch { /* 并发时下次再迁移 */ }
     }
+    // 规则中心：Pages Functions 没有 cron，随读请求每 5 分钟最多执行一次自动规则（关单、自动收货结算、超时退款等）
+    const last = Date.parse(data.settings.lastSweepAt ?? '') || 0
+    if (Date.now() - last > 5 * 60_000) {
+      const c = { id: `sw${Date.now().toString(36)}`, now: new Date().toISOString() }
+      const patch = reducers.runSchedules(data, c)
+      try { await save(env.DB, { ...data, ...patch }, Object.keys(patch), version); data = { ...data, ...patch }; version += 1 } catch { /* 并发时由下一次请求执行 */ }
+    }
     return json({ version, data })
   }
   if (path === 'reset' && request.method === 'POST') {

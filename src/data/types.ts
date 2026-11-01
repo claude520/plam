@@ -15,6 +15,8 @@ export interface User {
   shopId?: string
   balance: number
   coins: number
+  /** 管理员所属后台角色（AdminRole.id），未设置视为超级管理员 */
+  adminRoleId?: string
 }
 
 export interface Category {
@@ -139,6 +141,11 @@ export interface Order {
   paidAt?: string
   shippedAt?: string
   doneAt?: string
+  /** 担保交易：确认收货后结算给商家的时间与平台佣金 */
+  settledAt?: string
+  commission?: number
+  /** 关闭原因（如超时未付款系统关闭） */
+  closeReason?: string
   address: Address
   payment?: { provider: string; tradeNo: string }
   logistics?: { company: string; no: string; traces: { time: string; text: string }[] }
@@ -401,4 +408,45 @@ export interface LiveConfig {
   publicScreenAI: boolean
   fps: 1 | 2
   quality: 'low' | 'mid' | 'high'
+}
+
+// ---------------- 资金 / 工单 ----------------
+/** 资金流水：escrow 买家付款进入担保 / settle 结算给商家 / commission 平台佣金 / refund 退款给买家 / withdraw 商家提现打款 / adjust 人工调账 */
+export type LedgerType = 'escrow' | 'settle' | 'commission' | 'refund' | 'withdraw' | 'adjust'
+export interface LedgerEntry { id: string; at: string; type: LedgerType; amount: number; userId?: string; shopId?: string; orderId?: string; note?: string }
+
+export interface Withdrawal {
+  id: string
+  shopId: string
+  userId: string
+  amount: number
+  account: string
+  status: 'pending' | 'paid' | 'rejected'
+  createdAt: string
+  reviewedAt?: string
+  reviewer?: string
+  note?: string
+}
+
+export type TicketStatus = 'open' | 'processing' | 'resolved' | 'closed'
+export interface TicketReply { by: 'user' | 'admin' | 'shop' | 'system'; name: string; text: string; at: string }
+/** 客诉工单：买家投诉 / 咨询，平台小二处理 */
+export interface Ticket {
+  id: string
+  userId: string
+  shopId?: string
+  orderId?: string
+  type: string
+  title: string
+  content: string
+  images: string[]
+  status: TicketStatus
+  priority: 'normal' | 'high' | 'urgent'
+  assignee?: string
+  replies: TicketReply[]
+  createdAt: string
+  updatedAt: string
+  firstReplyAt?: string
+  /** 买家满意度 1~5 */
+  satisfaction?: number
 }

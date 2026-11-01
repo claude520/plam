@@ -18,11 +18,11 @@ export const initialState = (): DataState => {
       { id: 'ci6', productId: 'p30', skuId: 'p30-sku2', qty: 1, checked: false, addedAt: now },
     ] as CartItem[],
     coupons: seed.coupons, reviews: seed.reviews, refunds: seed.refunds, banners: seed.banners, announcements: seed.announcements,
-    paymentProviders: seed.paymentProviders, campaigns: seed.campaigns, auditLogs: seed.auditLogs, messages: seed.messages, adminRoles: seed.adminRoles, lives: seed.lives, liveConfigs: seed.liveConfigs, violations: [], adPlans: [],
+    paymentProviders: seed.paymentProviders, campaigns: seed.campaigns, auditLogs: seed.auditLogs, messages: seed.messages, adminRoles: seed.adminRoles, lives: seed.lives, liveConfigs: seed.liveConfigs, violations: [], adPlans: [], ledger: [], withdrawals: [], tickets: [],
     favorites: ['p14', 'p15', 'p21', 'p25', 'p28', 'p36', 'p40', 'p19'],
     footprints: ['p41', 'p42', 'p45', 'p46', 'p2', 'p5', 'p30', 'p33', 'p13', 'p6'].map((productId, i) => ({ productId, time: new Date(Date.now() - i * 3.6e6).toISOString() })),
     followedShops: ['s1', 's3', 's6', 's9', 's12'],
     myCoupons: [{ couponId: 'cp1', used: false }, { couponId: 'cp2', used: false }, { couponId: 'cp3', used: false }, { couponId: 'cp4', used: false }],
-    settings: { siteName: 'Plam 商城', slogan: '淘你喜欢', commissionRate: 5, freightDefault: 10, autoConfirmDays: 10, maintenance: false },
+    settings: { siteName: 'Plam 商城', slogan: '淘你喜欢', commissionRate: 5, freightDefault: 10, autoConfirmDays: 10, maintenance: false, unpaidCloseHours: 24, refundAutoHours: 48, withdrawMin: 100 },
   }
 }
